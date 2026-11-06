@@ -95,6 +95,8 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .cs .i{width:14px;height:14px;stroke-width:3}
 .cs.ok{background:var(--pine);color:var(--pine-ink)}
 .cam.done{box-shadow:0 0 0 3px var(--pine)}
+.ring{position:absolute;z-index:4;width:58px;height:58px;margin:-29px 0 0 -29px;border:2px solid #fff;border-radius:50%;pointer-events:none;animation:ring .8s ease-out forwards}
+@keyframes ring{from{transform:scale(1.5);opacity:0}30%{opacity:1}to{transform:scale(.9);opacity:0}}
 .cam-btn{position:absolute;z-index:3;bottom:20px;inset-inline-end:22px;width:42px;height:42px;border-radius:12px;background:rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;cursor:pointer;backdrop-filter:blur(4px)}
 .cam-msg{position:absolute;z-index:3;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 12px;font-size:12.5px;white-space:nowrap;backdrop-filter:blur(4px)}
 .cam-msg:empty{display:none}
@@ -236,6 +238,9 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
     </div>
     <div class="f"><label for="fBar"><span>الباركود</span><span id="barState"></span></label>
       <input id="fBar" class="bar" type="text" inputmode="numeric" autocomplete="off" placeholder="يُقرأ بالكاميرا أو اكتبه"></div>
+    <div class="f" id="expF"><label for="fExp"><span>تاريخ الانتهاء <small>(اختياري)</small></span><button class="pill" id="expTgl" type="button" aria-pressed="false"></button></label>
+      <input id="fExp" class="in num" type="date" hidden>
+      <small id="expHint" style="color:var(--muted);font-size:12.5px"></small></div>
     <button class="tgl" id="svcTgl" type="button" aria-pressed="false"><span>خدمة بدون مخزون<small>مثل قياس الضغط أو السكر أو الحقن</small></span><i class="sw"></i></button>
     <div class="sec">
       <h3>الوحدات والأسعار <small id="curLbl">ر.ي</small></h3>
@@ -307,7 +312,7 @@ function eanOK(s){if(!/^\d+$/.test(s)||![8,12,13].includes(s.length))return fals
 const DEF_CATS=['مسكنات','مضادات حيوية','جهاز تنفسي','جهاز هضمي','حساسية','سكري','ضغط وقلب','مكملات','مستلزمات','أدوية أطفال','عناية بالبشرة','عيون وأذن','عظام ومفاصل','أعصاب','غدد وهرمونات','مضادات فطريات وطفيليات','نسائية','خدمات'];
 let storeOK=true;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{storeOK=false}}};
-let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:''},LS.get('pma.settings',{}));
+let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:'',useExp:false},LS.get('pma.settings',{}));
 let items=LS.get('pma.items',[]);
 const saveS=()=>LS.set('pma.settings',S), saveI=()=>LS.set('pma.items',items);
 const PH={db:null,mem:new Map(),
@@ -368,7 +373,7 @@ $('#btnDemo').onclick=loadDemo;
 /* ---------- editor state ---------- */
 const ed=$('#editor');
 let E=null,busy=false,samp=null,dlcap=null;
-const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,createdAt:Date.now()});
+const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',exp:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,createdAt:Date.now()});
 function openEditor(it){
  const isNew=!it;
  E={d:it?JSON.parse(JSON.stringify(it)):blank(),isNew,touched:{},conf:{},barWarn:false,photoURL:null,photoDel:false,snap:null,catNew:''};
@@ -385,14 +390,14 @@ function openEditor(it){
 const snapshot=()=>JSON.stringify([E.d,E.photoURL,E.photoDel]);
 function fillForm(){
  const d=E.d;
- $('#fName').value=d.name;$('#fSci').value=d.sci;$('#fBar').value=d.barcode;$('#fShelf').value=d.shelf;$('#fMin').value=d.min;
+ $('#fName').value=d.name;$('#fSci').value=d.sci;$('#fBar').value=d.barcode;$('#fExp').value=d.exp||'';paintExp();$('#fShelf').value=d.shelf;$('#fMin').value=d.min;
  $('#svcTgl').setAttribute('aria-pressed',String(d.service));
  $('#nameLang').textContent=S.nameLang==='en'?'EN':'ع';
  $('#fName').classList.toggle('ltr',S.nameLang==='en');
  renderCat();renderUnits();renderBatches();paintPhoto();applyService();refresh();
 }
 function applyService(){
- const s=E.d.service;$('#cam').hidden=s;$('#stockSec').hidden=s;$('#fBar').closest('.f').hidden=s;$('#catLbl').textContent='الفئة';
+ const s=E.d.service;$('#cam').hidden=s;$('#stockSec').hidden=s;$('#fBar').closest('.f').hidden=s;$('#expF').hidden=s;$('#catLbl').textContent='الفئة';
 }
 function closeEditor(force){
  const go=()=>{ed.hidden=true;$('#home').hidden=false;$('#dock').hidden=false;E=null;camStop();renderHome();window.scrollTo(0,0)};
@@ -405,6 +410,10 @@ $('#fName').addEventListener('input',e=>{E.d.name=e.target.value;E.touched.name=
 $('#fSci').addEventListener('input',e=>{E.d.sci=e.target.value;E.touched.sci=true;refresh()});
 $('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'').slice(0,14);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
 $('#fShelf').addEventListener('input',e=>{E.d.shelf=e.target.value});
+function paintExp(){const on=!!S.useExp;$('#expTgl').textContent=on?'مفعّل':'تفعيل';$('#expTgl').setAttribute('aria-pressed',String(on));$('#fExp').hidden=!on;$('#expHint').textContent=on?'يُقرأ من العلبة إن كان مكتوبا. اتركه فارغا إن لم يكن له تاريخ.':'';}
+$('#expTgl').onclick=()=>{S.useExp=!S.useExp;saveS();paintExp();refresh()};
+function syncBatchExp(old,v){E.d.batches.forEach(b=>{if(!b.exp||b.exp===old)b.exp=v});renderBatches()}
+$('#fExp').addEventListener('change',e=>{const old=E.d.exp;E.d.exp=e.target.value;E.touched.exp=true;syncBatchExp(old,E.d.exp);refresh()});
 $('#fMin').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;E.d.min=v});
 $('#nameLang').onclick=()=>{S.nameLang=S.nameLang==='en'?'ar':'en';saveS();$('#nameLang').textContent=S.nameLang==='en'?'EN':'ع';$('#fName').classList.toggle('ltr',S.nameLang==='en');toast(S.nameLang==='en'?'الأسماء بالإنجليزية':'الأسماء بالعربية')};
 $('#svcTgl').onclick=()=>{
@@ -468,7 +477,7 @@ function renderBatches(){
    <small>${tot&&d.units[0].n?`المجموع: ${fmt(tot)} ${esc(d.units[0].n)}`:''}</small>
    <button class="btn sm" data-rmb="${i}" type="button" style="height:34px;justify-self:start">حذف الدفعة</button></div>`}).join('');
 }
-$('#addBatch').onclick=()=>{const d=E.d;if(!d.units[0].n){toast('أضف الوحدة أولا','bad');return}d.batches.push({id:uid(),no:'',exp:'',qty:'',unit:d.units[0].n,cost:''});renderBatches();refresh();$('#batches').querySelector('.batch:last-child .b-q').focus()};
+$('#addBatch').onclick=()=>{const d=E.d;if(!d.units[0].n){toast('أضف الوحدة أولا','bad');return}d.batches.push({id:uid(),no:'',exp:d.exp||'',qty:'',unit:d.units[0].n,cost:''});renderBatches();refresh();$('#batches').querySelector('.batch:last-child .b-q').focus()};
 $('#batches').addEventListener('input',e=>{
  const r=e.target.closest('.batch');if(!r)return;const b=E.d.batches[+r.dataset.i];
  if(e.target.classList.contains('b-q')){const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;b.qty=v;r.querySelector('small').textContent=v&&E.d.units[0].n?`المجموع: ${fmt(+v*baseOf(E.d,b.unit))} ${E.d.units[0].n}`:''}
@@ -501,6 +510,7 @@ function refresh(){
  const bar=d.barcode,barOk=bar&&eanOK(bar)&&!E.barWarn;
  const chk=[['الاسم',!!d.name.trim()],['الفئة',!!d.cat],...(d.service?[]:[['الباركود',barOk?true:bar?'warn':false]]),['الأسعار',priced]];
  if(d.sci)chk.push(['المادة',true]);
+ if(S.useExp&&!d.service)chk.push(['الانتهاء',!!d.exp]);
  $('#checks').innerHTML=chk.map(([n,s])=>`<span class="ck ${s===true?'ok':s==='warn'?'warn':''}">${s===true?ico('check'):s==='warn'?ico('alert'):'<i class="dot"></i>'}${n}</span>`).join('');
  $('#barState').innerHTML=bar?(barOk?`<span style="color:var(--pine)">${ico('check')}</span>`:`<span style="color:var(--warn);font-size:12.5px">راجع الرقم</span>`):'';
  const bad=!!dup||!d.name.trim();
@@ -521,7 +531,7 @@ async function camStart(){
  try{
   cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
-  try{await cam.stream.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:'continuous'}]})}catch{}
+  restoreFocus();
   if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
   liveStart();
  }catch(e){cam.stream=null;noLive(e)}
@@ -598,7 +608,7 @@ const toDataURL=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>o
 function frameBlob(max,q){const v=cam.video,k=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise(ok=>c.toBlob(ok,'image/jpeg',q))}
 
 /* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
-const L={t:0,prev:null,steadyAt:0,ref:null,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
+const L={focusAt:0,t:0,prev:null,steadyAt:0,ref:null,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
 const gcv=document.createElement('canvas');gcv.width=64;gcv.height=48;const gx=gcv.getContext('2d',{willReadFrequently:true});
 function grayOf(v){gx.drawImage(v,0,0,64,48);const d=gx.getImageData(0,0,64,48).data,g=new Uint8Array(3072);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
 const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
@@ -610,25 +620,30 @@ async function liveTick(){
  if(v.paused){v.play().catch(()=>{});next();return}
  if(E.d.service||busy||!v.videoWidth){next();return}
  const now=performance.now(),g=grayOf(v),motion=gdiff(g,L.prev);L.prev=g;
- if(motion<6){if(!L.steadyAt)L.steadyAt=now}else L.steadyAt=0;
+ if(motion<6){if(!L.steadyAt){L.steadyAt=now;if(now-L.focusAt>2500)restoreFocus()}}else L.steadyAt=0;
  const needBar=!E.touched.barcode&&(!E.d.barcode||E.barWarn);
- if(needBar&&!L.decBusy){
+ if(needBar&&!L.decBusy&&motion<14){
   L.decBusy=true;L.tick++;
   detectCode(v,L.tick).then(code=>{L.decBusy=false;if(!E||!code){if(!code&&++L.miss>8)L.blockBar='';return}
    L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30)}).catch(()=>{L.decBusy=false});
  }
- const needName=!E.d.name.trim(),typing=document.activeElement&&document.activeElement.tagName==='INPUT';
- if(needName&&!typing&&!L.aiBusy&&!L.paused&&now>L.cool&&L.steadyAt&&now-L.steadyAt>900
-   &&(!L.ref||gdiff(g,L.ref)>14)&&(!L.last||gdiff(g,L.last)>10||now-L.lastAt>7000))liveRead(g);
+ const hasName=!!E.d.name.trim(),needName=!hasName,needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
+ const typing=document.activeElement&&document.activeElement.tagName==='INPUT';
+ const okSteady=!typing&&!L.aiBusy&&!L.paused&&now>L.cool&&L.steadyAt&&now-L.steadyAt>900&&(!L.ref||gdiff(g,L.ref)>14);
+ if(okSteady&&needName&&(!L.last||gdiff(g,L.last)>10||now-L.lastAt>7000))liveRead(g,'name');
+ else if(okSteady&&needExp&&L.last&&gdiff(g,L.last)>10)liveRead(g,'exp');
  guide();next();
 }
-async function liveRead(g){
- L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.ref=null;cam.el.classList.add('busy');setMsg('جارٍ قراءة الاسم…');
+async function liveRead(g,mode){
+ const ex=mode==='exp';
+ L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.ref=null;cam.el.classList.add('busy');setMsg(ex?'جارٍ قراءة التاريخ…':'جارٍ قراءة الاسم…');
+ if(ex)E.expTries=(E.expTries||0)+1;
  try{
   const res=await callAI(await frameBlob(1280,.85));
   if(!E)return;
-  const n=applyReading(res,res&&eanOK(res.barcode)?res.barcode:'',false);
-  if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+2200;if(L.fails>=4){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
+  const n=applyReading(res,ex?'':(res&&eanOK(res.barcode)?res.barcode:''),false,ex);
+  if(ex){L.cool=performance.now()+2200}
+  else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+2200;if(L.fails>=4){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
  }catch(e){
   const c=e&&e.code;L.cool=performance.now()+3000;L.fails++;
   if(['not_granted','need_code','rate_limited','offline','sampling_disabled','images_unavailable','session_expired'].includes(c)||L.fails>=4){L.paused=true;toast(aiError(e),'bad');setMsg('اضغط على الإطار لإعادة المحاولة')}
@@ -637,16 +652,28 @@ async function liveRead(g){
 function forceRead(){
  if(cam.state!=='live'||!E||L.aiBusy||E.d.service)return;
  L.paused=false;L.fails=0;L.cool=0;L.ref=null;L.last=null;
- if(!E.d.name.trim())liveRead(L.prev);
+ if(!E.d.name.trim())liveRead(L.prev,'name');
 }
-cam.video.addEventListener('click',forceRead);
+function restoreFocus(){
+ const tr=cam.stream&&cam.stream.getVideoTracks()[0];if(!tr)return;L.focusAt=performance.now();
+ try{const c=tr.getCapabilities?tr.getCapabilities():{};if(c.focusMode&&c.focusMode.includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{})}catch{}
+}
+async function tapFocus(ev){
+ if(cam.state!=='live')return;
+ const r=cam.video.getBoundingClientRect(),px=ev.clientX-r.left,py=ev.clientY-r.top,x=Math.min(1,Math.max(0,px/r.width)),y=Math.min(1,Math.max(0,py/r.height));
+ const ring=document.createElement('div');ring.className='ring';ring.style.left=px+'px';ring.style.top=py+'px';cam.el.append(ring);setTimeout(()=>ring.remove(),900);
+ const tr=cam.stream&&cam.stream.getVideoTracks()[0];
+ if(tr&&tr.getCapabilities){try{const c=tr.getCapabilities(),adv={pointsOfInterest:[{x,y}]};if(c.focusMode&&c.focusMode.includes('single-shot'))adv.focusMode='single-shot';await tr.applyConstraints({advanced:[adv]})}catch{}}
+ setTimeout(restoreFocus,1600);setTimeout(forceRead,700);
+}
+cam.video.addEventListener('click',tapFocus);
 function guide(){
  if(!E||cam.state!=='live'||E.d.service)return;
- const hn=!!E.d.name.trim(),hb=!!E.d.barcode&&!E.barWarn;
- $('#camSteps').innerHTML=[['الاسم',hn],['الباركود',hb]].map(([n,o])=>`<span class="cs ${o?'ok':''}">${o?ico('check'):'<i></i>'}${n}</span>`).join('');
+ const hn=!!E.d.name.trim(),hb=!!E.d.barcode&&!E.barWarn,wantExp=S.useExp&&!E.d.exp&&(E.expTries||0)<3;
+ $('#camSteps').innerHTML=[['الاسم',hn],['الباركود',hb],...(S.useExp?[['الانتهاء',!!E.d.exp]]:[])].map(([n,o])=>`<span class="cs ${o?'ok':''}">${o?ico('check'):'<i></i>'}${n}</span>`).join('');
  if(L.aiBusy||(L.paused&&!hn))return;
- setMsg(!hn?'ثبّت اسم الدواء داخل الإطار':!hb?'الآن وجّه الباركود':'اكتمل. راجع الحقول واحفظ');
- if(hn&&hb&&!E.doneShown){E.doneShown=true;cam.el.classList.add('done');navigator.vibrate&&navigator.vibrate([20,40,20]);setTimeout(()=>cam.el.classList.remove('done'),900)}
+ setMsg(!hn?'ثبّت اسم الدواء داخل الإطار':!hb?'الآن وجّه الباركود':wantExp?'وجّه تاريخ الانتهاء إن كان مكتوبا':'اكتمل. راجع الحقول واحفظ');
+ if(hn&&hb&&!wantExp&&!E.doneShown){E.doneShown=true;cam.el.classList.add('done');navigator.vibrate&&navigator.vibrate([20,40,20]);setTimeout(()=>cam.el.classList.remove('done'),900)}
 }
 $('#capIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
 $('#galIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
@@ -657,26 +684,28 @@ function buildPrompt(lang,cats){
  const ex=lang==='en'?'"Panadol 500 mg"':'"بنادول 500 ملجم"';
  return `You are reading the packaging of one medicine or pharmacy product (box, blister, bottle, tube, device) for a pharmacy inventory app. Read only what is printed. Never invent values.
 Reply with ONLY one JSON object, no other text:
-{"found":boolean,"name":string,"sci":string,"cat":string,"newCat":string,"barcode":string,"form":string,"packCount":number|null,"confidence":number}
+{"found":boolean,"name":string,"sci":string,"cat":string,"newCat":string,"barcode":string,"exp":string,"form":string,"packCount":number|null,"confidence":number}
 Rules:
 - name: brand name plus strength, written in ${L}, like ${ex}. If the brand is printed in another language, transliterate it to ${L}. Add the form only when it separates products (syrup, drops, cream, injection). No manufacturer, no slogans.
 - sci: active ingredient(s) without strengths, in ${L}; "" if not printed or unsure.
 - cat: exactly one string copied from this list, or "" if none fits: ${JSON.stringify(cats)}
 - newCat: only when cat is "": a short Arabic category name; otherwise "".
 - barcode: the digits printed under the barcode, only when every digit is clearly legible; otherwise "".
+- exp: the expiry date printed on the pack (labels such as EXP, Exp. date, Use before, ينتهي, تاريخ الانتهاء) as YYYY-MM-DD, or YYYY-MM when only month and year are printed. Never use the manufacturing date (MFG, Prod., تاريخ الإنتاج). "" when no expiry date is visible.
 - form: one of tablet, capsule, syrup, drops, cream, ointment, gel, injection, inhaler, spray, suppository, sachet, device, supply, other.
 - packCount: how many individual units the pack holds when printed (20 for "20 tablets"); otherwise null.
 - confidence: 0 to 1.
-If the image shows no product, reply {"found":false,"name":"","sci":"","cat":"","newCat":"","barcode":"","form":"other","packCount":null,"confidence":0}.`;
+If the image shows no product, reply {"found":false,"name":"","sci":"","cat":"","newCat":"","barcode":"","exp":"","form":"other","packCount":null,"confidence":0}.`;
 }
+function normExp(s){s=toEn(String(s||'')).trim();const m=s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/);if(!m)return '';const y=+m[1],mo=+m[2];if(y<2020||y>2045||mo<1||mo>12)return '';const last=new Date(y,mo,0).getDate();let d=m[3]?Math.min(+m[3],last):last;if(d<1)d=last;return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
 function clean(o){
  o=o&&typeof o==='object'?o:{};const s=v=>typeof v==='string'?v.trim():'';
  const cats=S.cats;const c=cats.find(x=>norm(x)===norm(s(o.cat)));
  const pc=Number(o.packCount);
- return {found:o.found!==false,name:s(o.name),sci:s(o.sci),cat:c||'',newCat:c?'':s(o.newCat),barcode:toEn(s(o.barcode)).replace(/\D/g,''),form:s(o.form),packCount:pc>1&&pc<=1000?Math.round(pc):null,conf:Math.max(0,Math.min(1,Number(o.confidence)||0.5))};
+ return {found:o.found!==false,name:s(o.name),sci:s(o.sci),cat:c||'',newCat:c?'':s(o.newCat),barcode:toEn(s(o.barcode)).replace(/\D/g,''),exp:normExp(o.exp),form:s(o.form),packCount:pc>1&&pc<=1000?Math.round(pc):null,conf:Math.max(0,Math.min(1,Number(o.confidence)||0.5))};
 }
 async function callAI(blob){
- const img=await shrink(blob,1280,.85),cats=S.cats.filter(c=>c!=='خدمات');
+ const img=await shrink(blob,1024,.8),cats=S.cats.filter(c=>c!=='خدمات');
  if(samp)return clean(await samp.json(buildPrompt(S.nameLang||'ar',cats),{images:img,modelTier:'quick',cache:false}));
  let r;
  try{r=await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-access-code':S.code||''},body:JSON.stringify({image:await toDataURL(img),lang:S.nameLang||'ar',cats})})}catch{throw {code:'offline'}}
@@ -688,14 +717,16 @@ function aiError(e){
  const c=e&&e.code;
  return ({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',rate_limited:'طلبات كثيرة. انتظر قليلا ثم أعد المحاولة.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
 }
-function applyReading(res,code,warn){
+function applyReading(res,code,warn,onlyExp){
  const steps=[];
+ if(onlyExp){if(res&&res.exp&&S.useExp)steps.push(['exp',res.exp,{conf:res.conf}]);steps.forEach(([k,v,o])=>E&&setVal(k,v,o));return steps.length}
  if(res&&res.found){
   if(res.name)steps.push(['name',res.name,{conf:res.conf}]);
   if(res.sci)steps.push(['sci',res.sci,{conf:res.conf}]);
   if(res.cat)steps.push(['cat',res.cat,{conf:res.conf}]);else if(res.newCat&&!E.d.cat){E.catNew=res.newCat;renderCat()}
   suggestUnits(res);
  }
+ if(res&&res.found&&res.exp&&S.useExp)steps.push(['exp',res.exp,{conf:res.conf}]);
  if(code)steps.push(['barcode',code,{conf:warn?0.4:2,warn}]);
  steps.forEach(([k,v,o],i)=>setTimeout(()=>E&&setVal(k,v,o),i*150));
  return steps.length;
@@ -723,12 +754,12 @@ function suggestUnits(r){
  else d.units=[{n:FORM_UNIT[r.form]||'علبة',f:1,price:''}];
  renderUnits();renderBatches();
 }
-const FIELD={name:'#fName',sci:'#fSci',cat:'#fCat',barcode:'#fBar'};
+const FIELD={name:'#fName',sci:'#fSci',cat:'#fCat',barcode:'#fBar',exp:'#fExp'};
 function setVal(k,v,o={}){
  if(!E)return;const d=E.d,cur=d[k],conf=o.conf??0.5;
  if(cur&&(E.touched[k]&&k!=='barcode'||conf<=(E.conf[k]||0)))return;
  if(cur&&E.touched[k]&&k==='barcode'&&cur!==v&&!(o.conf>1))return;
- d[k]=v;E.conf[k]=conf;if(k==='barcode')E.barWarn=!!o.warn;
+ d[k]=v;E.conf[k]=conf;if(k==='barcode')E.barWarn=!!o.warn;if(k==='exp')syncBatchExp('',v);
  const el=$(FIELD[k]);if(k==='cat')renderCat();else el.value=v;
  el.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
  fly(v,el);el.classList.remove('glow');void el.offsetWidth;el.classList.add('glow');refresh();
@@ -758,6 +789,7 @@ async function save(next){
  const d=E.d,err=validate(d);if(err){toast(err,'bad');return}
  if(findDup(d)){toast('الصنف مكرر. عدّل الاسم أو افتح الموجود.','bad');return}
  const out={id:d.id,name:d.name.trim().replace(/\s+/g,' '),sci:d.sci.trim(),cat:d.cat,barcode:d.barcode,shelf:d.shelf.trim(),min:d.min===''?null:+d.min,service:!!d.service,
+  exp:d.exp||'',
   units:d.units.map((u,i)=>({n:u.n.trim(),f:i?+u.f:1,price:u.price===''||u.price==null?null:+u.price})),
   batches:d.service?[]:d.batches.filter(b=>+b.qty>0).map(b=>({id:b.id||uid(),no:(b.no||'').trim(),exp:b.exp||'',qty:+b.qty,unit:b.unit,cost:b.cost===''||b.cost==null?null:+b.cost})),
   photo:!!(E.photoURL&&!E.photoDel),createdAt:d.createdAt,updatedAt:Date.now()};
@@ -774,7 +806,7 @@ $('#btnDel').onclick=()=>confirmSheet('حذف الصنف؟',`سيُحذف «${E.
 function buildExport(withPhotos){
  const real=items.filter(i=>!i.demo);
  return Promise.all(real.map(async it=>{
-  const o={id:it.id,name:it.name,sci:it.sci||'',cat:it.cat,barcode:it.barcode||'',shelf:it.shelf||'',min:it.min,service:!!it.service,
+  const o={id:it.id,name:it.name,sci:it.sci||'',cat:it.cat,barcode:it.barcode||'',exp:it.exp||'',shelf:it.shelf||'',min:it.min,service:!!it.service,
    units:it.units.map(u=>({n:u.n,f:u.f,price:u.price})),
    batches:(it.batches||[]).map(b=>{const f=baseOf(it,b.unit);return {no:b.no||'',exp:b.exp||'',unit:b.unit,qty:b.qty,qtyBase:b.qty*f,cost:b.cost,costBase:b.cost==null?null:Math.round(b.cost/f*10000)/10000}})};
   if(withPhotos&&it.photo){const p=await PH.get(it.id);if(p)o.photo=p}
@@ -805,6 +837,7 @@ async function saveFile(filename,text){
 $('#btnHelp').onclick=()=>openSheet(`<h2>ما هذا الموقع؟</h2><p>أداة منفصلة عن فارمورا تسرّع إدخال الأصناف أول مرة. تصوّر الدواء بالجوال فتُقرأ بياناته، وتخرج بملف واحد يستورده النظام.</p>
  <ol class="steps help"><li><span>اضغط «صنف جديد» وثبّت الكاميرا على اسم الدواء. يُقرأ تلقائيا بدون التقاط صورة، ثم وجّهها إلى الباركود.</span></li><li><span>تنتقل البيانات إلى الحقول. العلامة الخضراء تعني أن الحقل اكتمل، وكل شيء قابل للتعديل. الكاميرا المباشرة تعمل من رابط الموقع الخاص وليس من المعاينة داخل Claude.</span></li><li><span>أضف الوحدات والأسعار. وإن كانت الكمية موجودة في الصيدلية فأدخلها كدفعة.</span></li><li><span>«حفظ والتالي» ينقلك مباشرة للصنف التالي.</span></li><li><span>في النهاية «تصدير» ثم في فارمورا: المخزون والأدوية، أدوات المخزون، استيراد من فارمورا المساعد.</span></li></ol>
  <div class="note warn" style="margin-bottom:10px">الأصناف هي قائمة الأدوية العامة. الكمية الموجودة فعليا اختيارية وتُضاف كدفعة عند الاستيراد.</div>
+ <p>تاريخ الانتهاء حقل اختياري تفعّله من الزر بجانبه، ويُقرأ من العلبة إن كان مكتوبا. إن لم يكن مكتوبا يبقى فارغا ويُعدّ بلا تاريخ انتهاء.</p>
  <p style="margin:0">بياناتك محفوظة على هذا الجهاز فقط وليست في قاعدة بيانات. لا تمسح بيانات المتصفح قبل أن تصدّر.</p>`);
 function openMenu(){
  openSheet(`<h2>الإعدادات</h2><div class="stack">
