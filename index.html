@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1d6b51">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>فارمورا المساعد</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone-first, one column. Home = list + dock. Editor = small camera on top, fields below, sticky save bar. */
+:root{
+  --bg:#f1f5f2; --surface:#ffffff; --surface2:#f6f9f7; --ink:#13231b; --muted:#59695f; --line:#d8e2db;
+  --pine:#1d6b51; --pine-ink:#ffffff; --pine-soft:#dcefe4; --pine-deep:#0f4a37;
+  --warn:#8f5200; --warn-soft:#fcefd2; --bad:#b3261e; --bad-soft:#fde7e4;
+  --cam:#0c1511; --shadow:0 8px 28px rgba(19,35,27,.14);
+  --font:'IBM Plex Sans Arabic',system-ui,'Segoe UI',Tahoma,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1814; --surface:#15241d; --surface2:#1a2c24; --ink:#e5efe9; --muted:#9bb0a4; --line:#27392f;
+  --pine:#46bd8b; --pine-ink:#06150e; --pine-soft:#1a3a2c; --pine-deep:#8fdcb8;
+  --warn:#f0b45f; --warn-soft:#3a2b12; --bad:#ff8f80; --bad-soft:#3d1c19; --cam:#050a08; --shadow:0 8px 28px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1814; --surface:#15241d; --surface2:#1a2c24; --ink:#e5efe9; --muted:#9bb0a4; --line:#27392f;
+  --pine:#46bd8b; --pine-ink:#06150e; --pine-soft:#1a3a2c; --pine-deep:#8fdcb8;
+  --warn:#f0b45f; --warn-soft:#3a2b12; --bad:#ff8f80; --bad-soft:#3d1c19; --cam:#050a08; --shadow:0 8px 28px rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font);direction:rtl;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+
+/* home */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:12px;padding:14px 0 10px}
+.logo{width:42px;height:42px;flex:none}
+.brand{flex:1;min-width:0}
+.brand b{display:block;font-size:19px;line-height:1.2;font-weight:700}
+.brand small{color:var(--muted);font-size:12.5px}
+.ib{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px;font-size:13px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.chip b{color:var(--ink);font-weight:600}
+.chip.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}.chip.warn b{color:inherit}
+.search{position:relative;margin-bottom:12px}
+.search input{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 42px 0 12px}
+.search .i{position:absolute;inset-inline-start:12px;top:13px;color:var(--muted)}
+.search input{padding-inline-start:40px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.thumb{width:46px;height:46px;border-radius:10px;background:var(--pine-soft) center/cover no-repeat;color:var(--pine);display:grid;place-items:center;flex:none}
+.rbody{flex:1;min-width:0;display:flex;flex-direction:column}
+.rbody b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rbody small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tags{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.tag{font-size:11.5px;border-radius:6px;padding:1px 7px;background:var(--pine-soft);color:var(--pine-deep);white-space:nowrap}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:22px 18px;margin-top:8px}
+.empty h2{margin:0 0 4px;font-size:18px}
+.empty p{margin:0 0 14px;color:var(--muted)}
+.steps{display:flex;flex-direction:column;gap:10px;margin:0 0 16px;padding:0;list-style:none;counter-reset:s}
+.steps li{display:flex;gap:10px;align-items:flex-start;counter-increment:s}
+.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--pine);color:var(--pine-ink);font-size:13px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+.dock{position:fixed;inset:auto 0 0;z-index:25;display:flex;gap:10px;padding:14px max(16px,env(safe-area-inset-left,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));background:linear-gradient(to top,var(--bg) 68%,transparent)}
+.btn{height:52px;border-radius:14px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border:1px solid var(--line);background:var(--surface)}
+.btn.pri{background:var(--pine);color:var(--pine-ink);border-color:transparent;flex:1}
+.btn.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.btn.sm{height:40px;border-radius:10px;padding:0 14px;font-size:14px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.link{color:var(--pine);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+/* editor */
+.editor{position:fixed;inset:0;z-index:40;background:var(--bg);display:grid;grid-template-rows:auto auto auto 1fr auto;
+  padding-top:env(safe-area-inset-top,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));direction:rtl}
+.edbar{display:flex;align-items:center;gap:10px;padding:8px 14px}
+.edbar h1{flex:1;margin:0;font-size:16px;font-weight:600}
+.edbar .ib{width:38px;height:38px;border-radius:10px}
+.cam{position:relative;margin:0 14px;height:clamp(128px,24vh,196px);border-radius:16px;overflow:hidden;background:var(--cam);color:#eaf3ee;isolation:isolate}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam:not([data-state="live"]) video{display:none}
+.frame i{position:absolute;width:22px;height:22px;border:3px solid rgba(255,255,255,.85);z-index:2;pointer-events:none}
+.frame i:nth-child(1){top:12px;inset-inline-start:12px;border-inline-end:0;border-bottom:0;border-radius:8px 0 0 0}
+.frame i:nth-child(2){top:12px;inset-inline-end:12px;border-inline-start:0;border-bottom:0;border-radius:0 8px 0 0}
+.frame i:nth-child(3){bottom:12px;inset-inline-start:12px;border-inline-end:0;border-top:0;border-radius:0 0 0 8px}
+.frame i:nth-child(4){bottom:12px;inset-inline-end:12px;border-inline-start:0;border-top:0;border-radius:0 0 8px 0}
+.cam-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:0 54px}
+.cam[data-state="live"] .cam-ph{display:none}
+.cam-ph span{font-size:12.5px;opacity:.75}
+.cam-take{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:12px;background:var(--pine);color:var(--pine-ink);font-weight:600;cursor:pointer}
+.cam-steps{position:absolute;z-index:3;bottom:12px;left:50%;transform:translateX(-50%);display:none;gap:6px}
+.cam[data-state="live"] .cam-steps{display:flex}
+.cs{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12.5px;backdrop-filter:blur(4px);transition:background .25s}
+.cs i{width:8px;height:8px;border-radius:50%;border:2px solid currentColor;opacity:.6}
+.cs .i{width:14px;height:14px;stroke-width:3}
+.cs.ok{background:var(--pine);color:var(--pine-ink)}
+.cam.done{box-shadow:0 0 0 3px var(--pine)}
+.cam-btn{position:absolute;z-index:3;bottom:20px;inset-inline-end:22px;width:42px;height:42px;border-radius:12px;background:rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;cursor:pointer;backdrop-filter:blur(4px)}
+.cam-msg{position:absolute;z-index:3;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 12px;font-size:12.5px;white-space:nowrap;backdrop-filter:blur(4px)}
+.cam-msg:empty{display:none}
+.scanline{position:absolute;z-index:2;inset-inline:0;height:3px;background:linear-gradient(90deg,transparent,var(--pine),transparent);box-shadow:0 0 18px 4px var(--pine);top:0;display:none}
+.cam.busy .scanline{display:block;animation:sweep 1.2s ease-in-out infinite alternate}
+.cam.busy::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.25);z-index:1}
+@keyframes sweep{to{top:calc(100% - 3px)}}
+.checks{display:flex;gap:6px;padding:10px 14px 8px;overflow-x:auto;scrollbar-width:none}
+.checks::-webkit-scrollbar{display:none}
+.ck{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px 0 8px;border-radius:999px;font-size:12.5px;border:1px dashed var(--line);color:var(--muted);white-space:nowrap;flex:none;background:transparent}
+.ck .i{width:14px;height:14px;stroke-width:3}
+.ck .dot{width:8px;height:8px;border-radius:50%;border:2px solid currentColor;opacity:.5}
+.ck.ok{background:var(--pine-soft);color:var(--pine-deep);border:1px solid transparent}
+.ck.warn{background:var(--warn-soft);color:var(--warn);border:1px solid transparent}
+.scroll{overflow-y:auto;padding:4px 14px 28px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
+.f{display:flex;flex-direction:column;gap:5px}
+.f>label,.lab{font-size:13px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.f input[type=text],.f input[type=search],.f input[type=number],.f input[type=date],.in{width:100%;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 12px;font-size:16px}
+.f input:focus,.in:focus{border-color:var(--pine);outline:0;box-shadow:0 0 0 3px var(--pine-soft)}
+.ltr{direction:ltr;text-align:start}
+input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+.bar{font-family:var(--mono);letter-spacing:.04em;direction:ltr;text-align:right}
+.selbtn{display:flex;align-items:center;justify-content:space-between;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 12px;width:100%;text-align:start}
+.selbtn .ph{color:var(--muted)}
+.pill{height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line);font-size:11.5px;color:var(--muted);background:var(--surface)}
+.glow{animation:glow 1.1s ease-out}
+@keyframes glow{0%{box-shadow:0 0 0 0 var(--pine);background:var(--pine-soft)}100%{box-shadow:0 0 0 12px transparent}}
+.fly{position:fixed;z-index:80;pointer-events:none;background:var(--pine);color:var(--pine-ink);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:var(--shadow)}
+.note{border-radius:12px;padding:10px 12px;font-size:13.5px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.bad{background:var(--bad-soft);color:var(--bad)}
+.note .btn{margin-inline-start:auto}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sec h3{margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sec h3 small{font-weight:400;color:var(--muted);font-size:12.5px}
+.unit{display:grid;grid-template-columns:1fr 112px;gap:8px;align-items:center}
+.unit .fx{grid-column:1/-1;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13.5px}
+.unit .fx input{width:90px}
+.unit+.unit{padding-top:12px;border-top:1px dashed var(--line)}
+.unit .in{height:44px}
+.unit .rm{grid-column:1/-1;justify-self:start}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chipbtn{height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);font-size:14px}
+.chipbtn.add{border-style:dashed;color:var(--pine);font-weight:600}
+.batch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px;border-top:1px dashed var(--line)}
+.batch:first-of-type{border-top:0;padding-top:0}
+.batch .wide{grid-column:1/-1}
+.batch .in{height:44px}
+.batch small{color:var(--muted);font-size:12.5px;grid-column:1/-1}
+.tgl{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 14px;width:100%;text-align:start}
+.tgl span small{display:block;color:var(--muted);font-size:12.5px}
+.sw{width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:inset-inline-start .2s}
+.tgl[aria-pressed="true"] .sw{background:var(--pine)}
+.tgl[aria-pressed="true"] .sw::after{inset-inline-start:21px}
+.photo{display:flex;align-items:center;gap:12px}
+.photo .pv{width:64px;height:64px;border-radius:14px;background:var(--surface2) center/cover no-repeat;border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);flex:none}
+.acts{display:flex;gap:10px;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+.acts .btn{height:50px}
+
+/* sheets, toast */
+.back{position:fixed;inset:0;z-index:60;background:rgba(5,12,9,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:88%;overflow-y:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:8px 18px calc(20px + env(safe-area-inset-bottom,0px));direction:rtl;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.grab{width:42px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 12px}
+.sheet h2{margin:0 0 6px;font-size:18px}
+.sheet p{margin:0 0 12px;color:var(--muted)}
+.sheet .stack{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);width:100%;text-align:start}
+.opt.on{border-color:var(--pine);background:var(--pine-soft);color:var(--pine-deep);font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;height:44px;background:var(--surface2)}
+.seg button.on{background:var(--pine);color:var(--pine-ink);font-weight:600}
+.langbig{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.langbig button{height:92px;border-radius:16px;border:1px solid var(--line);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:22px;font-weight:700}
+.langbig small{font-size:12.5px;font-weight:400;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.kv:last-child{border:0}
+.toast{position:fixed;z-index:90;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;font-size:14px;max-width:88%;text-align:center;box-shadow:var(--shadow)}
+.toast.bad{background:var(--bad);color:#fff}
+.help li{margin-bottom:8px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<main id="home">
+  <header class="top">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#1d6b51"/><g transform="rotate(-38 24 24)"><rect x="9" y="17" width="30" height="14" rx="7" fill="#fff"/><path d="M24 17h8a7 7 0 0 1 0 14h-8z" fill="#9fd9bb"/></g><path d="M8 15v-4a3 3 0 0 1 3-3h4M33 8h4a3 3 0 0 1 3 3v4M40 33v4a3 3 0 0 1-3 3h-4M15 40h-4a3 3 0 0 1-3-3v-4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9"/></svg>
+    <div class="brand"><b>فارمورا المساعد</b><small>تجهيز أصناف الصيدلية من الجوال</small></div>
+    <button class="ib" id="btnHelp" aria-label="شرح الموقع"></button>
+    <button class="ib" id="btnMenu" aria-label="المزيد"></button>
+  </header>
+  <div class="stats" id="stats"></div>
+  <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ابحث بالاسم أو الباركود" autocomplete="off"></div>
+  <div class="list" id="list"></div>
+  <section class="empty" id="empty" hidden>
+    <h2>ابدأ بأول صنف</h2>
+    <p>صوّر العلبة وسيقرأ الذكاء الاصطناعي بياناتها. تراجعها وتحفظ، ثم تنقل كل الأصناف إلى فارمورا بملف واحد.</p>
+    <ol class="steps">
+      <li><span>اضغط «صنف جديد» ووجّه الكاميرا إلى الدواء.</span></li>
+      <li><span>راجع الاسم والفئة والباركود، وأضف الوحدات والأسعار.</span></li>
+      <li><span>في النهاية اضغط «تصدير الملف» واستورده من أدوات المخزون في فارمورا.</span></li>
+    </ol>
+    <button class="btn sm" id="btnDemo">جرّب بأصناف تجريبية</button>
+  </section>
+</main>
+<div class="dock" id="dock">
+  <button class="btn" id="btnExport" hidden></button>
+  <button class="btn pri" id="btnNew"></button>
+</div>
+
+<section class="editor" id="editor" hidden aria-label="محرر الصنف">
+  <div class="edbar">
+    <button class="ib" id="edClose" aria-label="إغلاق"></button>
+    <h1 id="edTitle">صنف جديد</h1>
+  </div>
+  <div class="cam" id="cam" data-state="idle">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="cam-ph" id="camPh">
+      <label class="cam-take" for="capIn"><span id="camIcon"></span>التقاط صورة للدواء</label>
+      <span id="camHint">سيُفتح تطبيق الكاميرا ثم تُقرأ الصورة تلقائيا</span>
+    </div>
+    <div class="frame"><i></i><i></i><i></i><i></i></div>
+    <div class="scanline"></div>
+    <div class="cam-msg" id="camMsg" role="status"></div>
+    <div class="cam-steps" id="camSteps"></div>
+    <label class="cam-btn" for="galIn" aria-label="اختيار صورة من المعرض" id="galBtn"></label>
+  </div>
+  <div class="checks" id="checks"></div>
+  <div class="scroll" id="scroll">
+    <div class="f">
+      <label for="fName"><span>اسم الصنف</span><button class="pill" id="nameLang" type="button" aria-label="لغة الاسم"></button></label>
+      <input id="fName" type="text" autocomplete="off" placeholder="مثال: بنادول 500 ملجم">
+    </div>
+    <div class="note bad" id="dupWarn" hidden></div>
+    <div class="f"><label for="fSci">المادة الفعالة <small>(اختياري)</small></label><input id="fSci" type="text" autocomplete="off"></div>
+    <div class="f"><label id="catLbl">الفئة</label>
+      <button class="selbtn" id="fCat" type="button"><span class="ph">اختر الفئة</span></button>
+      <div class="chips" id="catSuggest"></div>
+    </div>
+    <div class="f"><label for="fBar"><span>الباركود</span><span id="barState"></span></label>
+      <input id="fBar" class="bar" type="text" inputmode="numeric" autocomplete="off" placeholder="يُقرأ بالكاميرا أو اكتبه"></div>
+    <button class="tgl" id="svcTgl" type="button" aria-pressed="false"><span>خدمة بدون مخزون<small>مثل قياس الضغط أو السكر أو الحقن</small></span><i class="sw"></i></button>
+    <div class="sec">
+      <h3>الوحدات والأسعار <small id="curLbl">ر.ي</small></h3>
+      <div id="units"></div>
+      <div class="chips" id="unitChips"></div>
+    </div>
+    <div class="sec" id="stockSec">
+      <h3>الكمية الموجودة الآن <small>اختياري، تُضاف كدفعة</small></h3>
+      <div id="batches"></div>
+      <button class="chipbtn add" id="addBatch" type="button" style="align-self:flex-start">+ دفعة</button>
+    </div>
+    <div class="sec">
+      <h3>موقع الرف والصورة <small>اختياري</small></h3>
+      <div class="f"><input id="fShelf" type="text" autocomplete="off" placeholder="موقع الرف مثل A3"></div>
+      <div class="photo">
+        <div class="pv" id="pv"></div>
+        <div class="chips">
+          <label class="chipbtn" for="phCap" style="display:inline-flex;align-items:center">التقاط</label>
+          <label class="chipbtn" for="phGal" style="display:inline-flex;align-items:center">من المعرض</label>
+          <button class="chipbtn" id="phDel" type="button" hidden>إزالة</button>
+        </div>
+      </div>
+      <div class="f"><label for="fMin">الحد الأدنى للتنبيه <small>(اختياري)</small></label><input id="fMin" class="in num" type="text" inputmode="numeric" placeholder="بالوحدة الأصغر"></div>
+    </div>
+    <button class="btn bad sm" id="btnDel" type="button" hidden style="align-self:flex-start">حذف الصنف</button>
+  </div>
+  <div class="acts" id="acts">
+    <button class="btn" id="btnSave" type="button">حفظ</button>
+    <button class="btn pri" id="btnNext" type="button">حفظ والتالي</button>
+  </div>
+</section>
+
+<input id="capIn" type="file" accept="image/*" capture="environment" class="sr" tabindex="-1">
+<input id="galIn" type="file" accept="image/*" class="sr" tabindex="-1">
+<input id="phCap" type="file" accept="image/*" capture="environment" class="sr" tabindex="-1">
+<input id="phGal" type="file" accept="image/*" class="sr" tabindex="-1">
+<input id="catFile" type="file" accept="application/json,.json" class="sr" tabindex="-1">
+<div class="back" id="back" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(()=>{
+'use strict';
+document.documentElement.lang='ar';document.documentElement.dir='rtl';
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const toEn=s=>String(s??'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫،]/g,'.');
+const fmt=n=>Number(n).toLocaleString('en-US');
+const norm=s=>toEn(s).toLowerCase().replace(/[ً-ٰٟـ]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const IC={
+ plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ dots:'<circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/>',
+ help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1.9-1.1 1.7M12 17h.01"/>',
+ camera:'<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+ image:'<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M5 18l5-5 3 3 2-2 4 4"/>',
+ trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',download:'<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>',
+ share:'<path d="M12 15V4M8 8l4-4 4 4M6 12v7h12v-7"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',
+ alert:'<path d="M12 4l9 16H3zM12 10v4M12 17h.01"/>',chev:'<path d="M15 6l-6 6 6 6"/>',box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/>'
+};
+const ico=(n,x='')=>`<svg class="i ${x}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+function eanOK(s){if(!/^\d+$/.test(s)||![8,12,13].includes(s.length))return false;const d=s.split('').map(Number),c=d.pop();let t=0;d.reverse().forEach((n,i)=>t+=n*(i%2?1:3));return (10-t%10)%10===c}
+
+/* ---------- storage ---------- */
+const DEF_CATS=['مسكنات','مضادات حيوية','جهاز تنفسي','جهاز هضمي','حساسية','سكري','ضغط وقلب','مكملات','مستلزمات','أدوية أطفال','عناية بالبشرة','عيون وأذن','عظام ومفاصل','أعصاب','غدد وهرمونات','مضادات فطريات وطفيليات','نسائية','خدمات'];
+let storeOK=true;
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{storeOK=false}}};
+let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:''},LS.get('pma.settings',{}));
+let items=LS.get('pma.items',[]);
+const saveS=()=>LS.set('pma.settings',S), saveI=()=>LS.set('pma.items',items);
+const PH={db:null,mem:new Map(),
+ async open(){if(this.db!==null)return this.db;try{this.db=await new Promise((ok,no)=>{const r=indexedDB.open('pma',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}catch{this.db=false}return this.db},
+ async get(id){if(this.mem.has(id))return this.mem.get(id);const db=await this.open();if(!db)return null;return new Promise(ok=>{try{const q=db.transaction('p').objectStore('p').get(id);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch{ok(null)}})},
+ async set(id,url){this.mem.set(id,url);const db=await this.open();if(!db)return;try{db.transaction('p','readwrite').objectStore('p').put(url,id)}catch{}},
+ async del(id){this.mem.delete(id);const db=await this.open();if(!db)return;try{db.transaction('p','readwrite').objectStore('p').delete(id)}catch{}}};
+
+/* ---------- ui bits ---------- */
+let toastT;
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind==='bad'?' bad':'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='bad'?4200:2400)}
+const back=$('#back'),sheet=$('#sheet');let sheetClose=null;
+function openSheet(html,mount,opts={}){sheet.innerHTML='<div class="grab"></div>'+html;back.hidden=false;sheetClose=opts.locked?null:closeSheet;mount&&mount(sheet);sheet.scrollTop=0}
+function closeSheet(){back.hidden=true;sheet.innerHTML='';sheetClose=null}
+back.addEventListener('click',e=>{if(e.target===back&&sheetClose)sheetClose()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!back.hidden&&sheetClose)sheetClose()});
+function confirmSheet(title,text,okLabel,onOk,danger){
+ openSheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="stack"><button class="btn ${danger?'bad':'pri'}" data-ok>${esc(okLabel)}</button><button class="btn" data-no>رجوع</button></div>`,s=>{
+  s.querySelector('[data-ok]').onclick=()=>{closeSheet();onOk()};s.querySelector('[data-no]').onclick=closeSheet})}
+
+/* ---------- product math ---------- */
+const hasPrice=it=>it.units.every(u=>u.price>0);
+const baseOf=(it,uname)=>{const u=it.units.find(x=>x.n===uname)||it.units[0];return u?u.f:1};
+function stockBase(it){return (it.batches||[]).reduce((a,b)=>a+b.qty*baseOf(it,b.unit),0)}
+function findDup(d){
+ const n=norm(d.name);
+ if(n){const x=items.find(i=>i.id!==d.id&&norm(i.name)===n);if(x)return {kind:'name',item:x}}
+ if(d.barcode){const x=items.find(i=>i.id!==d.id&&i.barcode===d.barcode);if(x)return {kind:'barcode',item:x}}
+ return null}
+
+/* ---------- home ---------- */
+const listEl=$('#list');
+function renderHome(){
+ const real=items.filter(i=>!i.demo);
+ const noP=items.filter(i=>!hasPrice(i)).length, stk=items.filter(i=>(i.batches||[]).length).length;
+ $('#stats').innerHTML=items.length?`<span class="chip"><b>${fmt(items.length)}</b> صنف</span><span class="chip"><b>${fmt(stk)}</b> بمخزون</span>${noP?`<span class="chip warn">${ico('alert')}<b>${fmt(noP)}</b> بلا سعر</span>`:''}`:'';
+ $('#searchBox').hidden=items.length<6;
+ $('#empty').hidden=items.length>0;
+ const q=norm($('#q').value);
+ const rows=items.filter(i=>!q||norm(i.name).includes(q)||(i.barcode||'').includes(q)||norm(i.sci||'').includes(q));
+ listEl.innerHTML=rows.map(i=>{
+  const u=i.units.map(x=>`${esc(x.n)} ${x.price?fmt(x.price):'؟'}`).join(' · ');
+  return `<button class="row" data-id="${i.id}"><span class="thumb" data-ph="${i.photo?i.id:''}">${ico(i.service?'plus':'box')}</span>
+   <span class="rbody"><b>${esc(i.name)}</b><small>${esc(i.cat||'بلا فئة')}${i.barcode?' · '+esc(i.barcode):''}</small><small>${u}</small></span>
+   <span class="tags">${i.demo?'<span class="tag">تجريبي</span>':''}${!hasPrice(i)?'<span class="tag warn">بلا سعر</span>':''}${(i.batches||[]).length?`<span class="tag">${fmt(i.batches.length)} دفعة</span>`:''}</span></button>`}).join('');
+ listEl.querySelectorAll('[data-ph]').forEach(async el=>{const id=el.dataset.ph;if(!id)return;const u=await PH.get(id);if(u){el.style.backgroundImage=`url("${u}")`;el.innerHTML=''}});
+ const ex=$('#btnExport');ex.hidden=!real.length;ex.innerHTML=`${ico('download')}<span>تصدير (${fmt(real.length)})</span>`;
+ if(!storeOK&&!$('#stWarn')){const n=document.createElement('div');n.id='stWarn';n.className='note warn';n.textContent='التخزين المحلي غير متاح في هذا المتصفح. صدّر الملف قبل إغلاق الصفحة.';$('#stats').after(n)}
+}
+$('#q').addEventListener('input',renderHome);
+listEl.addEventListener('click',e=>{const r=e.target.closest('.row');if(r)openEditor(items.find(i=>i.id===r.dataset.id))});
+$('#btnHelp').innerHTML=ico('help');$('#btnMenu').innerHTML=ico('dots');
+$('#btnNew').innerHTML=ico('plus')+'<span>صنف جديد</span>';
+$('#btnNew').onclick=()=>openEditor(null);
+$('#btnExport').onclick=openExport;
+$('#btnDemo').onclick=loadDemo;
+
+/* ---------- editor state ---------- */
+const ed=$('#editor');
+let E=null,busy=false,samp=null,dlcap=null;
+const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,createdAt:Date.now()});
+function openEditor(it){
+ const isNew=!it;
+ E={d:it?JSON.parse(JSON.stringify(it)):blank(),isNew,touched:{},conf:{},barWarn:false,photoURL:null,photoDel:false,snap:null,catNew:''};
+ if(it){for(const k of ['name','sci','cat','barcode'])if(it[k])E.touched[k]=true}
+ E.d.units.forEach(u=>{if(u.price==null)u.price=''});
+ $('#home').hidden=true;$('#dock').hidden=true;ed.hidden=false;
+ $('#edTitle').textContent=isNew?'صنف جديد':'تعديل صنف';
+ $('#btnNext').hidden=!isNew;$('#btnSave').textContent=isNew?'حفظ':'حفظ التعديل';$('#btnDel').hidden=isNew;
+ $('#scroll').scrollTop=0;
+ fillForm();E.snap=snapshot();
+ if(it&&it.photo)PH.get(it.id).then(u=>{if(u&&E&&E.d.id===it.id){E.photoURL=u;paintPhoto()}});
+ camStart();
+}
+const snapshot=()=>JSON.stringify([E.d,E.photoURL,E.photoDel]);
+function fillForm(){
+ const d=E.d;
+ $('#fName').value=d.name;$('#fSci').value=d.sci;$('#fBar').value=d.barcode;$('#fShelf').value=d.shelf;$('#fMin').value=d.min;
+ $('#svcTgl').setAttribute('aria-pressed',String(d.service));
+ $('#nameLang').textContent=S.nameLang==='en'?'EN':'ع';
+ $('#fName').classList.toggle('ltr',S.nameLang==='en');
+ renderCat();renderUnits();renderBatches();paintPhoto();applyService();refresh();
+}
+function applyService(){
+ const s=E.d.service;$('#cam').hidden=s;$('#stockSec').hidden=s;$('#fBar').closest('.f').hidden=s;$('#catLbl').textContent='الفئة';
+}
+function closeEditor(force){
+ const go=()=>{ed.hidden=true;$('#home').hidden=false;$('#dock').hidden=false;E=null;camStop();renderHome();window.scrollTo(0,0)};
+ if(!force&&E&&snapshot()!==E.snap)confirmSheet('تجاهل التعديلات؟','لم تحفظ هذا الصنف بعد.','تجاهل',go,true);else go();
+}
+$('#edClose').innerHTML=ico('close');$('#edClose').onclick=()=>closeEditor(false);
+
+/* inputs */
+$('#fName').addEventListener('input',e=>{E.d.name=e.target.value;E.touched.name=true;refresh()});
+$('#fSci').addEventListener('input',e=>{E.d.sci=e.target.value;E.touched.sci=true;refresh()});
+$('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'').slice(0,14);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
+$('#fShelf').addEventListener('input',e=>{E.d.shelf=e.target.value});
+$('#fMin').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;E.d.min=v});
+$('#nameLang').onclick=()=>{S.nameLang=S.nameLang==='en'?'ar':'en';saveS();$('#nameLang').textContent=S.nameLang==='en'?'EN':'ع';$('#fName').classList.toggle('ltr',S.nameLang==='en');toast(S.nameLang==='en'?'الأسماء بالإنجليزية':'الأسماء بالعربية')};
+$('#svcTgl').onclick=()=>{
+ const d=E.d;d.service=!d.service;$('#svcTgl').setAttribute('aria-pressed',String(d.service));
+ if(d.service){if(!d.cat){d.cat='خدمات';if(!S.cats.includes('خدمات')){S.cats.push('خدمات');saveS()}}
+  if(d.units.length===1&&!d.units[0].n)d.units[0].n='مرة';d.batches=[]}
+ renderCat();renderUnits();renderBatches();applyService();refresh();if(!d.service)camStart()};
+
+/* category */
+function renderCat(){
+ const d=E.d,b=$('#fCat');b.innerHTML=d.cat?`<span>${esc(d.cat)}</span>${ico('chev')}`:`<span class="ph">اختر الفئة</span>${ico('chev')}`;
+ $('#catSuggest').innerHTML=E.catNew&&!d.cat?`<button class="chipbtn add" data-newcat>+ أنشئ فئة «${esc(E.catNew)}»</button>`:'';
+}
+$('#catSuggest').addEventListener('click',e=>{if(e.target.closest('[data-newcat]')){addCat(E.catNew);E.d.cat=E.catNew;E.touched.cat=true;E.catNew='';renderCat();refresh()}});
+function addCat(c){c=c.trim();if(c&&!S.cats.some(x=>norm(x)===norm(c))){S.cats.push(c);saveS()}}
+$('#fCat').onclick=()=>{
+ const draw=s=>{s.querySelector('#cl').innerHTML=S.cats.map(c=>`<button class="opt ${E.d.cat===c?'on':''}" data-c="${esc(c)}"><span>${esc(c)}</span>${E.d.cat===c?ico('check'):''}</button>`).join('')};
+ openSheet(`<h2>الفئة</h2><div class="stack" id="cl" style="margin-bottom:12px"></div><div style="display:flex;gap:8px"><input class="in" id="nc" placeholder="فئة جديدة" style="flex:1"><button class="btn sm pri" id="ncb" style="height:48px">إضافة</button></div>`,s=>{
+  draw(s);
+  s.addEventListener('click',e=>{const o=e.target.closest('[data-c]');if(o){E.d.cat=o.dataset.c;E.touched.cat=true;E.catNew='';closeSheet();renderCat();refresh()}});
+  s.querySelector('#ncb').onclick=()=>{const v=s.querySelector('#nc').value.trim();if(!v)return;addCat(v);const c=S.cats.find(x=>norm(x)===norm(v));E.d.cat=c;E.touched.cat=true;E.catNew='';closeSheet();renderCat();refresh()};
+ })};
+
+/* units */
+const UNIT_PRESETS=['حبة','شريط','علبة','زجاجة','أنبوب','قطعة'];
+function renderUnits(){
+ const d=E.d,base=d.units[0].n||'الوحدة الأصغر';
+ $('#units').innerHTML=d.units.map((u,i)=>`<div class="unit" data-i="${i}">
+  <input class="in u-n" placeholder="${i?'اسم الوحدة (علبة…)':'أصغر وحدة تُباع (حبة…)'}" value="${esc(u.n)}" aria-label="اسم الوحدة">
+  <input class="in num u-p" inputmode="decimal" placeholder="السعر" value="${u.price===''||u.price==null?'':esc(u.price)}" aria-label="السعر">
+  ${i?`<div class="fx"><span>تحتوي على</span><input class="in num u-f" inputmode="numeric" placeholder="كم" value="${u.f&&u.f>1?esc(u.f):''}" aria-label="العدد"><span>${esc(base)}</span><button class="btn sm rm" data-rm="${i}" type="button" style="margin-inline-start:auto;height:34px">حذف</button></div>`:''}
+ </div>`).join('');
+ const used=new Set(d.units.map(u=>u.n));
+ $('#unitChips').innerHTML=UNIT_PRESETS.filter(p=>!used.has(p)).map(p=>`<button class="chipbtn" data-add="${p}" type="button">+ ${p}</button>`).join('')+`<button class="chipbtn add" data-add="" type="button">+ وحدة أخرى</button>`;
+}
+$('#units').addEventListener('input',e=>{
+ const row=e.target.closest('.unit');if(!row)return;const u=E.d.units[+row.dataset.i];
+ if(e.target.classList.contains('u-n')){u.n=e.target.value;if(+row.dataset.i===0){document.querySelectorAll('.unit .fx span:nth-of-type(2)').forEach(s=>s.textContent=u.n||'الوحدة الأصغر');renderBatches()}}
+ if(e.target.classList.contains('u-p')){const v=toEn(e.target.value).replace(/[^\d.]/g,'');e.target.value=v;u.price=v}
+ if(e.target.classList.contains('u-f')){const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;u.f=v?+v:1}
+ refresh()});
+$('#units').addEventListener('change',e=>{if(e.target.classList.contains('u-n')){E.d.units[+e.target.closest('.unit').dataset.i].n=e.target.value.trim();renderUnits();renderBatches()}});
+$('#units').addEventListener('click',e=>{const r=e.target.closest('[data-rm]');if(r){E.d.units.splice(+r.dataset.rm,1);renderUnits();renderBatches();refresh()}});
+$('#unitChips').addEventListener('click',e=>{
+ const b=e.target.closest('[data-add]');if(!b)return;const n=b.dataset.add,d=E.d;
+ if(d.units.length===1&&!d.units[0].n&&n){d.units[0].n=n}else d.units.push({n,f:n==='شريط'?10:1,price:''});
+ renderUnits();renderBatches();refresh();
+ if(!n)$('#units').querySelector('.unit:last-child .u-n').focus()});
+
+/* batches */
+function renderBatches(){
+ const d=E.d,names=d.units.map(u=>u.n).filter(Boolean);
+ $('#batches').innerHTML=d.batches.map((b,i)=>{
+  const f=baseOf(d,b.unit),tot=(+b.qty||0)*f;
+  return `<div class="batch" data-i="${i}">
+   <input class="in num b-q" inputmode="numeric" placeholder="الكمية" value="${esc(b.qty??'')}" aria-label="الكمية">
+   <select class="in b-u" aria-label="الوحدة">${names.map(n=>`<option ${n===b.unit?'selected':''}>${esc(n)}</option>`).join('')}</select>
+   <input class="in b-e wide" type="date" value="${esc(b.exp||'')}" aria-label="تاريخ الانتهاء">
+   <input class="in b-n" placeholder="رقم التشغيلة (اختياري)" value="${esc(b.no||'')}" aria-label="رقم التشغيلة">
+   <input class="in num b-c" inputmode="decimal" placeholder="سعر الشراء (اختياري)" value="${esc(b.cost??'')}" aria-label="سعر الشراء">
+   <small>${tot&&d.units[0].n?`المجموع: ${fmt(tot)} ${esc(d.units[0].n)}`:''}</small>
+   <button class="btn sm" data-rmb="${i}" type="button" style="height:34px;justify-self:start">حذف الدفعة</button></div>`}).join('');
+}
+$('#addBatch').onclick=()=>{const d=E.d;if(!d.units[0].n){toast('أضف الوحدة أولا','bad');return}d.batches.push({id:uid(),no:'',exp:'',qty:'',unit:d.units[0].n,cost:''});renderBatches();refresh();$('#batches').querySelector('.batch:last-child .b-q').focus()};
+$('#batches').addEventListener('input',e=>{
+ const r=e.target.closest('.batch');if(!r)return;const b=E.d.batches[+r.dataset.i];
+ if(e.target.classList.contains('b-q')){const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;b.qty=v;r.querySelector('small').textContent=v&&E.d.units[0].n?`المجموع: ${fmt(+v*baseOf(E.d,b.unit))} ${E.d.units[0].n}`:''}
+ if(e.target.classList.contains('b-n'))b.no=e.target.value;
+ if(e.target.classList.contains('b-c')){const v=toEn(e.target.value).replace(/[^\d.]/g,'');e.target.value=v;b.cost=v}
+ refresh()});
+$('#batches').addEventListener('change',e=>{
+ const r=e.target.closest('.batch');if(!r)return;const b=E.d.batches[+r.dataset.i];
+ if(e.target.classList.contains('b-u')){b.unit=e.target.value;renderBatches()}
+ if(e.target.classList.contains('b-e'))b.exp=e.target.value;refresh()});
+$('#batches').addEventListener('click',e=>{const r=e.target.closest('[data-rmb]');if(r){E.d.batches.splice(+r.dataset.rmb,1);renderBatches();refresh()}});
+
+/* photo */
+function paintPhoto(){
+ const pv=$('#pv'),has=E.photoURL&&!E.photoDel;
+ pv.style.backgroundImage=has?`url("${E.photoURL}")`:'';pv.innerHTML=has?'':ico('image');$('#phDel').hidden=!has;
+}
+async function pickPhoto(f){if(!f||!E)return;try{E.photoURL=await toDataURL(await shrink(f,360,.72));E.photoDel=false;paintPhoto()}catch{toast('تعذّر قراءة الصورة','bad')}}
+$('#phCap').onchange=e=>{pickPhoto(e.target.files[0]);e.target.value=''};
+$('#phGal').onchange=e=>{pickPhoto(e.target.files[0]);e.target.value=''};
+$('#phDel').onclick=()=>{E.photoURL=null;E.photoDel=true;paintPhoto()};
+
+/* ---------- completion + duplicate state ---------- */
+function refresh(){
+ const d=E.d,dup=findDup(d);
+ const w=$('#dupWarn');
+ if(dup){w.hidden=false;w.innerHTML=`<span>${ico('alert')}</span><span style="flex:1">${dup.kind==='name'?'يوجد صنف بنفس الاسم تماما:':'هذا الباركود مسجّل لصنف آخر:'} «${esc(dup.item.name)}». عدّل الاسم أو افتح الصنف الموجود.</span><button class="btn sm" id="dupOpen" type="button">فتح الموجود</button>`;
+  $('#dupOpen').onclick=()=>{const t=dup.item;E.snap=snapshot();closeEditor(true);openEditor(t)}}else w.hidden=true;
+ const priced=d.units.length&&d.units.every(u=>u.n&&+u.price>0);
+ const bar=d.barcode,barOk=bar&&eanOK(bar)&&!E.barWarn;
+ const chk=[['الاسم',!!d.name.trim()],['الفئة',!!d.cat],...(d.service?[]:[['الباركود',barOk?true:bar?'warn':false]]),['الأسعار',priced]];
+ if(d.sci)chk.push(['المادة',true]);
+ $('#checks').innerHTML=chk.map(([n,s])=>`<span class="ck ${s===true?'ok':s==='warn'?'warn':''}">${s===true?ico('check'):s==='warn'?ico('alert'):'<i class="dot"></i>'}${n}</span>`).join('');
+ $('#barState').innerHTML=bar?(barOk?`<span style="color:var(--pine)">${ico('check')}</span>`:`<span style="color:var(--warn);font-size:12.5px">راجع الرقم</span>`):'';
+ const bad=!!dup||!d.name.trim();
+ $('#btnSave').disabled=bad;$('#btnNext').disabled=bad;
+ guide();
+}
+
+/* ---------- camera: live, no shutter ---------- */
+const cam={el:$('#cam'),video:$('#video'),stream:null,det:null,state:'idle'};
+$('#camIcon').innerHTML=ico('camera');$('#galBtn').innerHTML=ico('image');
+const setCam=s=>{cam.state=s;cam.el.dataset.state=s};
+const setMsg=t=>{$('#camMsg').textContent=t||''};
+const FORMATS=['ean_13','ean_8','upc_a'];
+async function camStart(){
+ if(!E||E.d.service)return;
+ if(cam.stream){if(cam.video.srcObject!==cam.stream)cam.video.srcObject=cam.stream;cam.video.play().catch(()=>{});setCam('live');liveStart();return}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){noLive();return}
+ try{
+  cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+  cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
+  try{await cam.stream.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:'continuous'}]})}catch{}
+  if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
+  liveStart();
+ }catch(e){cam.stream=null;noLive(e)}
+}
+function noLive(e){
+ setCam('nolive');
+ $('#camHint').textContent=e&&e.name==='NotAllowedError'?'الكاميرا المباشرة غير مسموحة هنا. اسمح بها من إعدادات المتصفح، أو افتح الموقع من رابطه الخاص. ويمكنك الآن التقاط صورة.':'الكاميرا المباشرة غير متاحة. سيُفتح تطبيق الكاميرا لالتقاط صورة.';
+}
+function camStop(){clearTimeout(L.t);if(cam.stream){cam.stream.getTracks().forEach(t=>t.stop());cam.stream=null}cam.video.srcObject=null;setCam('idle');setMsg('')}
+
+/* EAN-13 / EAN-8 / UPC-A scanline decoder: fallback for browsers without BarcodeDetector (iPhone Safari, Firefox) */
+const EL=[[3,2,1,1],[2,2,2,1],[2,1,2,2],[1,4,1,1],[1,1,3,2],[1,2,3,1],[1,1,1,4],[1,3,1,2],[1,2,1,3],[3,1,1,2]];
+const EG=EL.map(p=>p.slice().reverse());
+const PAR=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+function matchDigit(r,k,tables){
+ const t=r[k]+r[k+1]+r[k+2]+r[k+3];if(!t)return null;
+ const n=[r[k]*7/t,r[k+1]*7/t,r[k+2]*7/t,r[k+3]*7/t];let best=null,bd=9;
+ for(const [ti,tab] of tables)for(let d=0;d<10;d++){const p=tab[d];let sum=0,mx=0;for(let j=0;j<4;j++){const e=Math.abs(n[j]-p[j]);sum+=e;if(e>mx)mx=e}if(mx<=0.9&&sum/4<bd){bd=sum/4;best=[d,ti]}}
+ return bd<=0.5?best:null;
+}
+function decodeRuns(r,i,nl){
+ const u=(r[i]+r[i+1]+r[i+2])/3;
+ for(let j=0;j<3;j++)if(r[i+j]<u*0.5||r[i+j]>u*1.7)return '';
+ let pos=i+3,pat='';const dg=[];
+ for(let n=0;n<nl;n++,pos+=4){if(pos+3>=r.length)return '';const m=matchDigit(r,pos,[['L',EL],['G',EG]]);if(!m)return '';dg.push(m[0]);pat+=m[1]}
+ pos+=5;
+ for(let n=0;n<nl;n++,pos+=4){if(pos+3>=r.length)return '';const m=matchDigit(r,pos,[['R',EL]]);if(!m)return '';dg.push(m[0])}
+ if(nl===6){const f=PAR.indexOf(pat);if(f<0)return '';dg.unshift(f)}else if(pat!=='LLLL')return '';
+ return dg.join('');
+}
+function lineRuns(g,off,step,n){
+ const s=new Float32Array(n);let mn=255,mx=0;
+ for(let i=0;i<n;i++){const a=g[off+Math.max(0,i-1)*step],b=g[off+i*step],c=g[off+Math.min(n-1,i+1)*step];s[i]=(a+2*b+c)/4;if(s[i]<mn)mn=s[i];if(s[i]>mx)mx=s[i]}
+ if(mx-mn<40)return null;
+ const th=(mn+mx)/2,runs=[];let cur=s[0]<th,len=1;const fb=cur;
+ for(let i=1;i<n;i++){const c=s[i]<th;if(c===cur)len++;else{runs.push(len);len=1;cur=c}}
+ runs.push(len);return {runs,fb};
+}
+function scanGray(g,w,h){
+ const tryLine=(off,step,n)=>{
+  const rr=lineRuns(g,off,step,n);if(!rr)return '';const {runs,fb}=rr,L=runs.length;
+  for(const rev of [0,1]){const r=rev?runs.slice().reverse():runs;
+   for(let i=0;i+2<r.length;i++){
+    const black=rev?(((L-1-i)%2===0)===fb):((i%2===0)===fb);if(!black)continue;
+    const u=(r[i]+r[i+1]+r[i+2])/3;if(u<1.2)continue;if(i>0&&r[i-1]<u*2.5)continue;
+    for(const nl of [6,4]){const d=decodeRuns(r,i,nl);if(d&&eanOK(d))return d}}}
+  return '';};
+ for(let k=0;k<28;k++){const c=tryLine(Math.floor(h*(0.12+0.76*k/27))*w,1,w);if(c)return c}
+ for(let k=0;k<28;k++){const c=tryLine(Math.floor(w*(0.12+0.76*k/27)),w,h);if(c)return c}
+ return '';
+}
+window.__pmaScan=scanGray;
+const scanC=document.createElement('canvas'),scanX=scanC.getContext('2d',{willReadFrequently:true});
+function grayFrom(src,w,h){scanC.width=w;scanC.height=h;scanX.drawImage(src,0,0,w,h);const d=scanX.getImageData(0,0,w,h).data,g=new Uint8ClampedArray(w*h);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
+async function detectCode(v,tick){
+ const vw=v.videoWidth,vh=v.videoHeight,w=Math.min(960,vw),h=Math.round(vh*w/vw);
+ if(cam.det){try{const r=await cam.det.detect(v);const c=r.map(x=>x.rawValue).find(eanOK);if(c)return c}catch{}}
+ if(!cam.det||tick%3===0)return scanGray(grayFrom(v,w,h),w,h);
+ return '';
+}
+async function barcodeFromBlob(blob){
+ try{const bmp=await createImageBitmap(blob);let c='';
+  if('BarcodeDetector' in window){try{const r=await new BarcodeDetector({formats:FORMATS}).detect(bmp);c=r.map(x=>x.rawValue).find(eanOK)||''}catch{}}
+  if(!c){const w=Math.min(1280,bmp.width),h=Math.round(bmp.height*w/bmp.width);c=scanGray(grayFrom(bmp,w,h),w,h)}
+  bmp.close&&bmp.close();return c}catch{return ''}
+}
+async function shrink(blob,max,q){
+ const bmp=await createImageBitmap(blob);const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
+ const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+ c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);bmp.close&&bmp.close();
+ return new Promise((ok,no)=>c.toBlob(bm=>bm?ok(bm):no(new Error('blob')),'image/jpeg',q));
+}
+const toDataURL=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(b)});
+function frameBlob(max,q){const v=cam.video,k=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise(ok=>c.toBlob(ok,'image/jpeg',q))}
+
+/* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
+const L={t:0,prev:null,steadyAt:0,ref:null,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
+const gcv=document.createElement('canvas');gcv.width=64;gcv.height=48;const gx=gcv.getContext('2d',{willReadFrequently:true});
+function grayOf(v){gx.drawImage(v,0,0,64,48);const d=gx.getImageData(0,0,64,48).data,g=new Uint8Array(3072);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
+const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
+function liveStart(){clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;liveTick()}
+async function liveTick(){
+ clearTimeout(L.t);
+ if(!E||cam.state!=='live'||ed.hidden)return;
+ const next=()=>{L.t=setTimeout(liveTick,230)},v=cam.video;
+ if(v.paused){v.play().catch(()=>{});next();return}
+ if(E.d.service||busy||!v.videoWidth){next();return}
+ const now=performance.now(),g=grayOf(v),motion=gdiff(g,L.prev);L.prev=g;
+ if(motion<6){if(!L.steadyAt)L.steadyAt=now}else L.steadyAt=0;
+ const needBar=!E.touched.barcode&&(!E.d.barcode||E.barWarn);
+ if(needBar&&!L.decBusy){
+  L.decBusy=true;L.tick++;
+  detectCode(v,L.tick).then(code=>{L.decBusy=false;if(!E||!code){if(!code&&++L.miss>8)L.blockBar='';return}
+   L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30)}).catch(()=>{L.decBusy=false});
+ }
+ const needName=!E.d.name.trim(),typing=document.activeElement&&document.activeElement.tagName==='INPUT';
+ if(needName&&!typing&&!L.aiBusy&&!L.paused&&now>L.cool&&L.steadyAt&&now-L.steadyAt>900
+   &&(!L.ref||gdiff(g,L.ref)>14)&&(!L.last||gdiff(g,L.last)>10||now-L.lastAt>7000))liveRead(g);
+ guide();next();
+}
+async function liveRead(g){
+ L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.ref=null;cam.el.classList.add('busy');setMsg('جارٍ قراءة الاسم…');
+ try{
+  const res=await callAI(await frameBlob(1280,.85));
+  if(!E)return;
+  const n=applyReading(res,res&&eanOK(res.barcode)?res.barcode:'',false);
+  if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+2200;if(L.fails>=4){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
+ }catch(e){
+  const c=e&&e.code;L.cool=performance.now()+3000;L.fails++;
+  if(['not_granted','need_code','rate_limited','offline','sampling_disabled','images_unavailable','session_expired'].includes(c)||L.fails>=4){L.paused=true;toast(aiError(e),'bad');setMsg('اضغط على الإطار لإعادة المحاولة')}
+ }finally{L.aiBusy=false;cam.el.classList.remove('busy')}
+}
+function forceRead(){
+ if(cam.state!=='live'||!E||L.aiBusy||E.d.service)return;
+ L.paused=false;L.fails=0;L.cool=0;L.ref=null;L.last=null;
+ if(!E.d.name.trim())liveRead(L.prev);
+}
+cam.video.addEventListener('click',forceRead);
+function guide(){
+ if(!E||cam.state!=='live'||E.d.service)return;
+ const hn=!!E.d.name.trim(),hb=!!E.d.barcode&&!E.barWarn;
+ $('#camSteps').innerHTML=[['الاسم',hn],['الباركود',hb]].map(([n,o])=>`<span class="cs ${o?'ok':''}">${o?ico('check'):'<i></i>'}${n}</span>`).join('');
+ if(L.aiBusy||(L.paused&&!hn))return;
+ setMsg(!hn?'ثبّت اسم الدواء داخل الإطار':!hb?'الآن وجّه الباركود':'اكتمل. راجع الحقول واحفظ');
+ if(hn&&hb&&!E.doneShown){E.doneShown=true;cam.el.classList.add('done');navigator.vibrate&&navigator.vibrate([20,40,20]);setTimeout(()=>cam.el.classList.remove('done'),900)}
+}
+$('#capIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
+$('#galIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
+
+/* ---------- AI ---------- */
+function buildPrompt(lang,cats){
+ const L=lang==='en'?'English (Latin letters)':'Arabic';
+ const ex=lang==='en'?'"Panadol 500 mg"':'"بنادول 500 ملجم"';
+ return `You are reading the packaging of one medicine or pharmacy product (box, blister, bottle, tube, device) for a pharmacy inventory app. Read only what is printed. Never invent values.
+Reply with ONLY one JSON object, no other text:
+{"found":boolean,"name":string,"sci":string,"cat":string,"newCat":string,"barcode":string,"form":string,"packCount":number|null,"confidence":number}
+Rules:
+- name: brand name plus strength, written in ${L}, like ${ex}. If the brand is printed in another language, transliterate it to ${L}. Add the form only when it separates products (syrup, drops, cream, injection). No manufacturer, no slogans.
+- sci: active ingredient(s) without strengths, in ${L}; "" if not printed or unsure.
+- cat: exactly one string copied from this list, or "" if none fits: ${JSON.stringify(cats)}
+- newCat: only when cat is "": a short Arabic category name; otherwise "".
+- barcode: the digits printed under the barcode, only when every digit is clearly legible; otherwise "".
+- form: one of tablet, capsule, syrup, drops, cream, ointment, gel, injection, inhaler, spray, suppository, sachet, device, supply, other.
+- packCount: how many individual units the pack holds when printed (20 for "20 tablets"); otherwise null.
+- confidence: 0 to 1.
+If the image shows no product, reply {"found":false,"name":"","sci":"","cat":"","newCat":"","barcode":"","form":"other","packCount":null,"confidence":0}.`;
+}
+function clean(o){
+ o=o&&typeof o==='object'?o:{};const s=v=>typeof v==='string'?v.trim():'';
+ const cats=S.cats;const c=cats.find(x=>norm(x)===norm(s(o.cat)));
+ const pc=Number(o.packCount);
+ return {found:o.found!==false,name:s(o.name),sci:s(o.sci),cat:c||'',newCat:c?'':s(o.newCat),barcode:toEn(s(o.barcode)).replace(/\D/g,''),form:s(o.form),packCount:pc>1&&pc<=1000?Math.round(pc):null,conf:Math.max(0,Math.min(1,Number(o.confidence)||0.5))};
+}
+async function callAI(blob){
+ const img=await shrink(blob,1280,.85),cats=S.cats.filter(c=>c!=='خدمات');
+ if(samp)return clean(await samp.json(buildPrompt(S.nameLang||'ar',cats),{images:img,modelTier:'quick',cache:false}));
+ let r;
+ try{r=await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-access-code':S.code||''},body:JSON.stringify({image:await toDataURL(img),lang:S.nameLang||'ar',cats})})}catch{throw {code:'offline'}}
+ if(r.status===401)throw {code:'need_code'};
+ if(!r.ok)throw {code:'server'};
+ return clean(await r.json());
+}
+function aiError(e){
+ const c=e&&e.code;
+ return ({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',rate_limited:'طلبات كثيرة. انتظر قليلا ثم أعد المحاولة.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
+}
+function applyReading(res,code,warn){
+ const steps=[];
+ if(res&&res.found){
+  if(res.name)steps.push(['name',res.name,{conf:res.conf}]);
+  if(res.sci)steps.push(['sci',res.sci,{conf:res.conf}]);
+  if(res.cat)steps.push(['cat',res.cat,{conf:res.conf}]);else if(res.newCat&&!E.d.cat){E.catNew=res.newCat;renderCat()}
+  suggestUnits(res);
+ }
+ if(code)steps.push(['barcode',code,{conf:warn?0.4:2,warn}]);
+ steps.forEach(([k,v,o],i)=>setTimeout(()=>E&&setVal(k,v,o),i*150));
+ return steps.length;
+}
+async function analyze(blob){
+ if(busy||!E)return;busy=true;cam.el.classList.add('busy');setMsg('جارٍ القراءة…');
+ let res=null,err=null;
+ const [bc,ai]=await Promise.allSettled([barcodeFromBlob(blob),callAI(blob)]);
+ if(ai.status==='fulfilled')res=ai.value;else err=ai.reason;
+ let code=bc.status==='fulfilled'?bc.value:'',warn=false;
+ if(!code&&res&&res.barcode){code=res.barcode;warn=!eanOK(code)}
+ cam.el.classList.remove('busy');setMsg('');busy=false;
+ if(!E)return;
+ const n=applyReading(res,code,warn);
+ if(!n){toast(err?aiError(err):'لم أجد بيانات واضحة. قرّب الدواء وأعد المحاولة.','bad');return}
+ if(err)toast(aiError(err)+' أُخذ الباركود فقط.','bad');
+ else if(res&&!res.found)toast('لم يظهر منتج واضح في الصورة.','bad');
+ else if(!E.d.barcode)toast('أضف صورة للباركود أو اكتبه.');
+}
+const FORM_UNIT={syrup:'زجاجة',drops:'عبوة',cream:'أنبوب',ointment:'أنبوب',gel:'أنبوب',injection:'علبة',inhaler:'بخاخ',spray:'بخاخ',suppository:'علبة',sachet:'علبة',device:'جهاز',supply:'قطعة',other:'علبة'};
+function suggestUnits(r){
+ const d=E.d;if(d.units.length!==1||d.units[0].n||d.units[0].price)return;
+ if((r.form==='tablet'||r.form==='capsule')&&r.packCount)d.units=[{n:'حبة',f:1,price:''},{n:'علبة',f:r.packCount,price:''}];
+ else if(r.form==='tablet'||r.form==='capsule')d.units=[{n:'علبة',f:1,price:''}];
+ else d.units=[{n:FORM_UNIT[r.form]||'علبة',f:1,price:''}];
+ renderUnits();renderBatches();
+}
+const FIELD={name:'#fName',sci:'#fSci',cat:'#fCat',barcode:'#fBar'};
+function setVal(k,v,o={}){
+ if(!E)return;const d=E.d,cur=d[k],conf=o.conf??0.5;
+ if(cur&&(E.touched[k]&&k!=='barcode'||conf<=(E.conf[k]||0)))return;
+ if(cur&&E.touched[k]&&k==='barcode'&&cur!==v&&!(o.conf>1))return;
+ d[k]=v;E.conf[k]=conf;if(k==='barcode')E.barWarn=!!o.warn;
+ const el=$(FIELD[k]);if(k==='cat')renderCat();else el.value=v;
+ el.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
+ fly(v,el);el.classList.remove('glow');void el.offsetWidth;el.classList.add('glow');refresh();
+}
+function fly(text,target){
+ if(reduce||ed.hidden)return;
+ const a=cam.el.getBoundingClientRect(),b=target.getBoundingClientRect();if(!a.width||!b.width)return;
+ const el=document.createElement('div');el.className='fly';el.textContent=text.length>24?text.slice(0,23)+'…':text;
+ const sx=a.left+a.width/2,sy=a.top+a.height/2,dx=b.left+b.width/2-sx,dy=b.top+b.height/2-sy;
+ el.style.left=sx+'px';el.style.top=sy+'px';document.body.append(el);
+ const P=(x,y,s,o,off)=>({transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) scale(${s})`,opacity:o,offset:off});
+ el.animate([P(0,0,.6,0,0),P(0,0,1,1,.15),P(dx,dy,.85,.95,.88),P(dx,dy,.7,0,1)],{duration:640,easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}).onfinish=()=>el.remove();
+}
+
+/* ---------- save / delete ---------- */
+function validate(d){
+ if(!d.name.trim())return 'اكتب اسم الصنف';
+ if(!d.cat)return 'اختر الفئة';
+ const seen=new Set();
+ for(let i=0;i<d.units.length;i++){const u=d.units[i],n=u.n.trim();
+  if(!n)return 'اكتب اسم كل وحدة';if(seen.has(n))return 'اسم الوحدة مكرر: '+n;seen.add(n);
+  if(i&&!(u.f>1))return `اكتب عدد ${d.units[0].n} داخل ${n}`}
+ for(const b of d.batches){if(b.qty!==''&&+b.qty>0&&!b.unit)return 'اختر وحدة الدفعة'}
+ return '';
+}
+async function save(next){
+ const d=E.d,err=validate(d);if(err){toast(err,'bad');return}
+ if(findDup(d)){toast('الصنف مكرر. عدّل الاسم أو افتح الموجود.','bad');return}
+ const out={id:d.id,name:d.name.trim().replace(/\s+/g,' '),sci:d.sci.trim(),cat:d.cat,barcode:d.barcode,shelf:d.shelf.trim(),min:d.min===''?null:+d.min,service:!!d.service,
+  units:d.units.map((u,i)=>({n:u.n.trim(),f:i?+u.f:1,price:u.price===''||u.price==null?null:+u.price})),
+  batches:d.service?[]:d.batches.filter(b=>+b.qty>0).map(b=>({id:b.id||uid(),no:(b.no||'').trim(),exp:b.exp||'',qty:+b.qty,unit:b.unit,cost:b.cost===''||b.cost==null?null:+b.cost})),
+  photo:!!(E.photoURL&&!E.photoDel),createdAt:d.createdAt,updatedAt:Date.now()};
+ if(d.demo)out.demo=true;
+ if(E.photoURL&&!E.photoDel)await PH.set(out.id,E.photoURL);else if(E.photoDel)await PH.del(out.id);
+ const i=items.findIndex(x=>x.id===out.id);if(i>=0)items[i]=out;else items.unshift(out);
+ saveI();toast(`تم حفظ «${out.name}»`);
+ if(next&&E.isNew){L.ref=L.prev;L.blockBar=out.barcode||'';L.last=null;E=null;openEditor(null);}else closeEditor(true);
+}
+$('#btnSave').onclick=()=>save(false);$('#btnNext').onclick=()=>save(true);
+$('#btnDel').onclick=()=>confirmSheet('حذف الصنف؟',`سيُحذف «${E.d.name}» من هذا الجهاز.`,'حذف',()=>{items=items.filter(x=>x.id!==E.d.id);PH.del(E.d.id);saveI();toast('تم الحذف');closeEditor(true)},true);
+
+/* ---------- export ---------- */
+function buildExport(withPhotos){
+ const real=items.filter(i=>!i.demo);
+ return Promise.all(real.map(async it=>{
+  const o={id:it.id,name:it.name,sci:it.sci||'',cat:it.cat,barcode:it.barcode||'',shelf:it.shelf||'',min:it.min,service:!!it.service,
+   units:it.units.map(u=>({n:u.n,f:u.f,price:u.price})),
+   batches:(it.batches||[]).map(b=>{const f=baseOf(it,b.unit);return {no:b.no||'',exp:b.exp||'',unit:b.unit,qty:b.qty,qtyBase:b.qty*f,cost:b.cost,costBase:b.cost==null?null:Math.round(b.cost/f*10000)/10000}})};
+  if(withPhotos&&it.photo){const p=await PH.get(it.id);if(p)o.photo=p}
+  return o})).then(list=>({schema:'pharmora-items',version:1,source:'pharmora-assistant',exportedAt:new Date().toISOString(),nameLang:S.nameLang||'ar',categories:[...new Set(list.map(x=>x.cat).filter(Boolean))],items:list}));
+}
+function openExport(){
+ const real=items.filter(i=>!i.demo);
+ const c={svc:real.filter(i=>i.service).length,np:real.filter(i=>!hasPrice(i)).length,nb:real.filter(i=>!i.service&&!i.barcode).length,st:real.filter(i=>(i.batches||[]).length).length,ph:real.filter(i=>i.photo).length};
+ const canShare=!!(navigator.canShare&&navigator.share);
+ openSheet(`<h2>تصدير ملف الاستيراد</h2><p>ملف واحد تستورده في فارمورا من المخزون والأدوية ثم أدوات المخزون.</p>
+  <div style="margin-bottom:12px"><div class="kv"><span>عدد الأصناف</span><b>${fmt(real.length)}</b></div><div class="kv"><span>خدمات</span><b>${fmt(c.svc)}</b></div><div class="kv"><span>بكمية موجودة (ستصبح دفعات)</span><b>${fmt(c.st)}</b></div>
+  ${c.np?`<div class="kv" style="color:var(--warn)"><span>بلا سعر كامل</span><b>${fmt(c.np)}</b></div>`:''}${c.nb?`<div class="kv" style="color:var(--warn)"><span>بلا باركود</span><b>${fmt(c.nb)}</b></div>`:''}</div>
+  ${c.ph?`<button class="tgl" id="exPh" type="button" aria-pressed="false" style="margin-bottom:12px"><span>تضمين الصور<small>يكبّر حجم الملف</small></span><i class="sw"></i></button>`:''}
+  <div class="stack"><button class="btn pri" id="exSave">${ico('download')}<span>حفظ الملف</span></button>${canShare?`<button class="btn" id="exShare">${ico('share')}<span>مشاركة</span></button>`:''}</div>`,s=>{
+  const ph=()=>s.querySelector('#exPh')?.getAttribute('aria-pressed')==='true';
+  s.querySelector('#exPh')&&(s.querySelector('#exPh').onclick=e=>{const b=e.currentTarget;b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'))});
+  const name=()=>`pharmora-items-${new Date().toISOString().slice(0,10)}.json`;
+  s.querySelector('#exSave').onclick=async()=>{const t=JSON.stringify(await buildExport(ph()),null,1);await saveFile(name(),t)};
+  s.querySelector('#exShare')&&(s.querySelector('#exShare').onclick=async()=>{const t=JSON.stringify(await buildExport(ph()),null,1);const f=new File([t],name(),{type:'application/json'});try{await navigator.share({files:[f],title:'أصناف فارمورا'})}catch(e){if(e&&e.name!=='AbortError')toast('تعذّرت المشاركة','bad')}});
+ });
+}
+async function saveFile(filename,text){
+ if(dlcap){try{const r=await dlcap.save({filename,data:text});if(r&&r.status==='saved')toast('تم حفظ الملف');return}catch(e){toast('لم يُحفظ الملف','bad');return}}
+ const blob=new Blob([text],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('تم حفظ الملف');
+}
+
+/* ---------- menu, help, first run, demo ---------- */
+$('#btnHelp').onclick=()=>openSheet(`<h2>ما هذا الموقع؟</h2><p>أداة منفصلة عن فارمورا تسرّع إدخال الأصناف أول مرة. تصوّر الدواء بالجوال فتُقرأ بياناته، وتخرج بملف واحد يستورده النظام.</p>
+ <ol class="steps help"><li><span>اضغط «صنف جديد» وثبّت الكاميرا على اسم الدواء. يُقرأ تلقائيا بدون التقاط صورة، ثم وجّهها إلى الباركود.</span></li><li><span>تنتقل البيانات إلى الحقول. العلامة الخضراء تعني أن الحقل اكتمل، وكل شيء قابل للتعديل. الكاميرا المباشرة تعمل من رابط الموقع الخاص وليس من المعاينة داخل Claude.</span></li><li><span>أضف الوحدات والأسعار. وإن كانت الكمية موجودة في الصيدلية فأدخلها كدفعة.</span></li><li><span>«حفظ والتالي» ينقلك مباشرة للصنف التالي.</span></li><li><span>في النهاية «تصدير» ثم في فارمورا: المخزون والأدوية، أدوات المخزون، استيراد من فارمورا المساعد.</span></li></ol>
+ <div class="note warn" style="margin-bottom:10px">الأصناف هي قائمة الأدوية العامة. الكمية الموجودة فعليا اختيارية وتُضاف كدفعة عند الاستيراد.</div>
+ <p style="margin:0">بياناتك محفوظة على هذا الجهاز فقط وليست في قاعدة بيانات. لا تمسح بيانات المتصفح قبل أن تصدّر.</p>`);
+function openMenu(){
+ openSheet(`<h2>الإعدادات</h2><div class="stack">
+  <div><div class="lab" style="margin-bottom:6px">لغة اسم الدواء</div><div class="seg" id="sg"><button data-l="ar" class="${S.nameLang!=='en'?'on':''}">عربي</button><button data-l="en" class="${S.nameLang==='en'?'on':''}">English</button></div></div>
+  <button class="opt" id="mCats"><span>استيراد الفئات من نسخة فارمورا</span>${ico('chev')}</button>
+  <div><div class="lab" style="margin-bottom:6px">رمز الوصول (إن كان الموقع يطلبه)</div><input class="in" id="mCode" type="text" value="${esc(S.code)}" autocomplete="off"></div>
+  ${items.some(i=>i.demo)?'<button class="opt" id="mDemo"><span>حذف الأصناف التجريبية</span>'+ico('trash')+'</button>':''}
+  <button class="btn bad" id="mWipe">حذف كل البيانات من هذا الجهاز</button></div>`,s=>{
+  s.querySelector('#sg').onclick=e=>{const b=e.target.closest('[data-l]');if(!b)return;S.nameLang=b.dataset.l;saveS();s.querySelectorAll('#sg button').forEach(x=>x.classList.toggle('on',x===b));E&&($('#nameLang').textContent=S.nameLang==='en'?'EN':'ع',$('#fName').classList.toggle('ltr',S.nameLang==='en'))};
+  s.querySelector('#mCode').oninput=e=>{S.code=e.target.value.trim();saveS()};
+  s.querySelector('#mCats').onclick=()=>$('#catFile').click();
+  s.querySelector('#mDemo')&&(s.querySelector('#mDemo').onclick=()=>{items=items.filter(i=>!i.demo);saveI();closeSheet();renderHome()});
+  s.querySelector('#mWipe').onclick=()=>confirmSheet('حذف كل البيانات؟','تُحذف الأصناف والصور من هذا الجهاز. تأكد أنك صدّرت الملف.','حذف الكل',async()=>{for(const i of items)await PH.del(i.id);items=[];saveI();renderHome();toast('تم الحذف')},true);
+ });
+}
+$('#btnMenu').onclick=openMenu;
+$('#catFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{const j=JSON.parse(await f.text());const cs=[...new Set((j.products||[]).map(p=>p.cat).filter(Boolean))];let n=0;cs.forEach(c=>{if(!S.cats.some(x=>norm(x)===norm(c))){S.cats.push(c);n++}});saveS();toast(n?`أُضيفت ${n} فئة`:'كل الفئات موجودة')}catch{toast('الملف ليس نسخة فارمورا صالحة','bad')}};
+function firstRun(){
+ openSheet(`<h2>بأي لغة تكتب أسماء الأدوية؟</h2><p>تُقرأ الأسماء من العلبة وتُكتب بهذه اللغة. تغييرها لاحقا من زر ⋮ أو من الزر الصغير بجانب حقل الاسم.</p><div class="langbig"><button data-l="ar">ع<small>عربي</small></button><button data-l="en">EN<small>English</small></button></div>`,s=>{
+  s.querySelector('.langbig').onclick=e=>{const b=e.target.closest('[data-l]');if(!b)return;S.nameLang=b.dataset.l;saveS();closeSheet()}},{locked:true});
+}
+function ean13(p){const d=p.split('').map(Number);let t=0;d.forEach((n,i)=>t+=n*(i%2?3:1));return p+((10-t%10)%10)}
+function loadDemo(){
+ if(!S.nameLang){S.nameLang='ar';saveS()}
+ const mk=(o)=>Object.assign({id:uid(),sci:'',shelf:'',min:null,service:false,batches:[],photo:false,demo:true,createdAt:Date.now(),updatedAt:Date.now()},o);
+ items=[mk({name:'بنادول 500 ملجم',sci:'باراسيتامول',cat:'مسكنات',barcode:ean13('628100100001'),shelf:'A1',units:[{n:'حبة',f:1,price:20},{n:'شريط',f:10,price:180},{n:'علبة',f:100,price:1700}],batches:[{id:uid(),no:'B101',exp:'2028-03-31',qty:15,unit:'علبة',cost:1200}]}),
+  mk({name:'قياس الضغط',cat:'خدمات',service:true,units:[{n:'مرة',f:1,price:150}]}),
+  mk({name:'أوجمنتين 1 جم',sci:'أموكسيسيلين + كلافولانيك',cat:'مضادات حيوية',units:[{n:'حبة',f:1,price:null},{n:'علبة',f:14,price:null}]})].concat(items);
+ saveI();renderHome();toast('أُضيفت أصناف تجريبية، تُستثنى من التصدير');
+}
+
+/* ---------- boot ---------- */
+renderHome();
+if(!S.nameLang)firstRun();
+(async()=>{try{if(window.claude&&claude.use){const s=await claude.use('sample');if(s){const l=await s.limits().catch(()=>null);if(l&&l.images)samp=s}const d=await claude.use('downloads');if(d)dlcap=d}}catch{}})();
+})();
+</script>
+
+</body></html>
