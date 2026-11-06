@@ -48,7 +48,19 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .search .i{position:absolute;inset-inline-start:12px;top:13px;color:var(--muted)}
 .search input{padding-inline-start:40px}
 .list{display:flex;flex-direction:column;gap:8px}
-.row{display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.row{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 6px 10px 12px;cursor:pointer}
+.row.arch{opacity:.7}
+.kb{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex:none}
+.kb:active{background:var(--surface2)}
+.fbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 10px;padding-bottom:2px}.fbar::-webkit-scrollbar{display:none}
+.fchip{height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;white-space:nowrap;flex:none;color:var(--muted)}
+.fchip.on{background:var(--pine);color:var(--pine-ink);border-color:transparent;font-weight:600}
+.fchip.add{border-style:dashed;color:var(--pine)}
+.pk{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 4px;border-bottom:1px dashed var(--line);width:100%;text-align:start}
+.pk .bx{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.pk.on .bx{background:var(--pine);border-color:var(--pine);color:var(--pine-ink)}
+.pk .bx .i{width:14px;height:14px;stroke-width:3}
+.guide{background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}.guide ol{margin:4px 0 0;padding-inline-start:20px}.guide li{margin-bottom:3px}
 .thumb{width:46px;height:46px;border-radius:10px;background:var(--pine-soft) center/cover no-repeat;color:var(--pine);display:grid;place-items:center;flex:none}
 .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
 .rbody b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -88,27 +100,31 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .cam[data-state="live"] .cam-ph{display:none}
 .cam-ph span{font-size:12.5px;opacity:.75}
 .cam-take{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:12px;background:var(--pine);color:var(--pine-ink);font-weight:600;cursor:pointer}
-.cam-steps{position:absolute;z-index:3;bottom:12px;left:50%;transform:translateX(-50%);display:none;gap:6px}
+.cam-steps{position:absolute;z-index:3;bottom:6px;left:50%;transform:translateX(-50%);display:none;gap:6px}
 .cam[data-state="live"] .cam-steps{display:flex}
-.cs{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12.5px;backdrop-filter:blur(4px);transition:background .25s}
-.cs i{width:8px;height:8px;border-radius:50%;border:2px solid currentColor;opacity:.6}
-.cs .i{width:14px;height:14px;stroke-width:3}
+.cs{display:inline-flex;align-items:center;gap:3px;height:16px;padding:0 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;line-height:1;backdrop-filter:blur(4px);transition:background .25s}
+.cs i{width:4px;height:4px;border-radius:50%;border:1.5px solid currentColor;opacity:.6}
+.cs .i{width:8px;height:8px;stroke-width:3.5}
 .cs.ok{background:var(--pine);color:var(--pine-ink)}
 .cam.done{box-shadow:0 0 0 3px var(--pine)}
 .ring{position:absolute;z-index:4;width:58px;height:58px;margin:-29px 0 0 -29px;border:2px solid #fff;border-radius:50%;pointer-events:none;animation:ring .8s ease-out forwards}
 @keyframes ring{from{transform:scale(1.5);opacity:0}30%{opacity:1}to{transform:scale(.9);opacity:0}}
-.cam-btn{position:absolute;z-index:3;bottom:20px;inset-inline-end:22px;width:42px;height:42px;border-radius:12px;background:rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;cursor:pointer;backdrop-filter:blur(4px)}
-.cam-msg{position:absolute;z-index:3;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 12px;font-size:12.5px;white-space:nowrap;backdrop-filter:blur(4px)}
+.cam-btn{position:absolute;z-index:3;top:6px;inset-inline-end:6px;width:26px;height:26px;border-radius:9px;background:rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;cursor:pointer;backdrop-filter:blur(4px)}
+.cam-btn .i{width:14px;height:14px}
+.cam-btn.on{background:var(--pine)}
+.cam-zoom{position:absolute;z-index:3;top:8px;inset-inline-start:8px;height:30px;min-width:38px;padding:0 8px;border-radius:9px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:600;backdrop-filter:blur(4px)}
+.cam-zoom[hidden]{display:none}
+.cam-msg{position:absolute;z-index:3;top:11px;max-width:calc(100% - 100px);overflow:hidden;text-overflow:ellipsis;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 12px;font-size:11.5px;white-space:nowrap;backdrop-filter:blur(4px)}
 .cam-msg:empty{display:none}
 .scanline{position:absolute;z-index:2;inset-inline:0;height:3px;background:linear-gradient(90deg,transparent,var(--pine),transparent);box-shadow:0 0 18px 4px var(--pine);top:0;display:none}
 .cam.busy .scanline{display:block;animation:sweep 1.2s ease-in-out infinite alternate}
 .cam.busy::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.25);z-index:1}
 @keyframes sweep{to{top:calc(100% - 3px)}}
-.checks{display:flex;gap:6px;padding:10px 14px 8px;overflow-x:auto;scrollbar-width:none}
+.checks{display:flex;gap:5px;padding:8px 14px 6px;overflow-x:auto;scrollbar-width:none}
 .checks::-webkit-scrollbar{display:none}
-.ck{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px 0 8px;border-radius:999px;font-size:12.5px;border:1px dashed var(--line);color:var(--muted);white-space:nowrap;flex:none;background:transparent}
-.ck .i{width:14px;height:14px;stroke-width:3}
-.ck .dot{width:8px;height:8px;border-radius:50%;border:2px solid currentColor;opacity:.5}
+.ck{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 6px 0 5px;border-radius:999px;font-size:10px;line-height:1;border:1px dashed var(--line);color:var(--muted);white-space:nowrap;flex:none;background:transparent}
+.ck .i{width:8px;height:8px;stroke-width:3.5}
+.ck .dot{width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor;opacity:.5}
 .ck.ok{background:var(--pine-soft);color:var(--pine-deep);border:1px solid transparent}
 .ck.warn{background:var(--warn-soft);color:var(--warn);border:1px solid transparent}
 .scroll{overflow-y:auto;padding:4px 14px 28px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
@@ -140,6 +156,8 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
 .unit .rm{grid-column:1/-1;justify-self:start}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chipbtn{height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);font-size:14px}
+.chipbtn.on{background:var(--pine);color:var(--pine-ink);border-color:transparent;font-weight:600}
+.pickList{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:0 10px;margin-bottom:10px}
 .chipbtn.add{border-style:dashed;color:var(--pine);font-weight:600}
 .batch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px;border-top:1px dashed var(--line)}
 .batch:first-of-type{border-top:0;padding-top:0}
@@ -178,6 +196,12 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
 .toast{position:fixed;z-index:90;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;font-size:14px;max-width:88%;text-align:center;box-shadow:var(--shadow)}
 .toast.bad{background:var(--bad);color:#fff}
 .help li{margin-bottom:8px}
+.crop{position:fixed;inset:0;z-index:70;background:#05100b;display:flex;flex-direction:column;align-items:center;gap:14px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));color:#fff;direction:rtl}
+.crop h2{margin:0;font-size:16px}
+.crop canvas{touch-action:none;border-radius:14px;background:#000;max-width:100%}
+.crop .bar2{display:flex;gap:10px;width:100%;max-width:420px;align-items:center}
+.crop input[type=range]{flex:1;accent-color:var(--pine)}
+.crop .btn{height:46px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 
@@ -190,6 +214,7 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
   </header>
   <div class="stats" id="stats"></div>
   <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ابحث بالاسم أو الباركود" autocomplete="off"></div>
+  <div class="fbar" id="fbar" hidden></div>
   <div class="list" id="list"></div>
   <section class="empty" id="empty" hidden>
     <h2>ابدأ بأول صنف</h2>
@@ -222,7 +247,8 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
     <div class="scanline"></div>
     <div class="cam-msg" id="camMsg" role="status"></div>
     <div class="cam-steps" id="camSteps"></div>
-    <label class="cam-btn" for="galIn" aria-label="اختيار صورة من المعرض" id="galBtn"></label>
+    <button class="cam-btn" id="camMore" type="button" aria-label="خيارات الكاميرا"></button>
+    <button class="cam-zoom" id="camZoom" type="button" hidden aria-label="تقريب"></button>
   </div>
   <div class="checks" id="checks"></div>
   <div class="scroll" id="scroll">
@@ -255,11 +281,13 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
     <div class="sec">
       <h3>موقع الرف والصورة <small>اختياري</small></h3>
       <div class="f"><input id="fShelf" type="text" autocomplete="off" placeholder="موقع الرف مثل A3"></div>
+      <div class="f"><label>المجموعة <small>(للترتيب هنا فقط، لا تُصدَّر)</small></label><button class="selbtn" id="fGrp" type="button"><span class="ph">بدون مجموعة</span></button></div>
       <div class="photo">
         <div class="pv" id="pv"></div>
         <div class="chips">
           <label class="chipbtn" for="phCap" style="display:inline-flex;align-items:center">التقاط</label>
           <label class="chipbtn" for="phGal" style="display:inline-flex;align-items:center">من المعرض</label>
+          <button class="chipbtn" id="phCrop" type="button" hidden>قص</button>
           <button class="chipbtn" id="phDel" type="button" hidden>إزالة</button>
         </div>
       </div>
@@ -279,6 +307,9 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
 <input id="phGal" type="file" accept="image/*" class="sr" tabindex="-1">
 <input id="catFile" type="file" accept="application/json,.json" class="sr" tabindex="-1">
 <div class="back" id="back" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<section class="crop" id="crop" hidden aria-label="قص الصورة"><h2>اسحب الصورة وكبّرها لتضبط القص</h2><canvas id="cropC"></canvas>
+  <div class="bar2"><span>تكبير</span><input id="cropZ" type="range" min="0.5" max="4" step="0.01" value="1"><button class="btn sm" id="cropRot" type="button" style="color:#fff;border-color:rgba(255,255,255,.3);background:transparent">تدوير</button></div>
+  <div class="bar2"><button class="btn" id="cropNo" type="button" style="flex:1;color:#fff;background:transparent;border-color:rgba(255,255,255,.3)">إلغاء</button><button class="btn pri" id="cropOk" type="button">اعتماد</button></div></section>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -303,6 +334,7 @@ const IC={
  image:'<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M5 18l5-5 3 3 2-2 4 4"/>',
  trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',download:'<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>',
  share:'<path d="M12 15V4M8 8l4-4 4 4M6 12v7h12v-7"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',
+ bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',focus:'<path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/><circle cx="12" cy="12" r="2.5"/>',
  alert:'<path d="M12 4l9 16H3zM12 10v4M12 17h.01"/>',chev:'<path d="M15 6l-6 6 6 6"/>',box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/>'
 };
 const ico=(n,x='')=>`<svg class="i ${x}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
@@ -312,8 +344,12 @@ function eanOK(s){if(!/^\d+$/.test(s)||![8,12,13].includes(s.length))return fals
 const DEF_CATS=['مسكنات','مضادات حيوية','جهاز تنفسي','جهاز هضمي','حساسية','سكري','ضغط وقلب','مكملات','مستلزمات','أدوية أطفال','عناية بالبشرة','عيون وأذن','عظام ومفاصل','أعصاب','غدد وهرمونات','مضادات فطريات وطفيليات','نسائية','خدمات'];
 let storeOK=true;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{storeOK=false}}};
-let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:'',useExp:false,userKey:''},LS.get('pma.settings',{}));
+let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:'',useExp:false,userKey:'',groups:[],torch:false,zoom:1},LS.get('pma.settings',{}));
 let items=LS.get('pma.items',[]);
+if(!Array.isArray(S.groups))S.groups=[];
+const F={cat:'',grp:'',arch:false};
+const live=()=>items.filter(i=>!i.arch);
+const grpName=id=>(S.groups.find(g=>g.id===id)||{}).name||'';
 const saveS=()=>LS.set('pma.settings',S), saveI=()=>LS.set('pma.items',items);
 const PH={db:null,mem:new Map(),
  async open(){if(this.db!==null)return this.db;try{this.db=await new Promise((ok,no)=>{const r=indexedDB.open('pma',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}catch{this.db=false}return this.db},
@@ -345,25 +381,91 @@ function findDup(d){
 
 /* ---------- home ---------- */
 const listEl=$('#list');
+function applyFilter(list){
+ const q=norm($('#q').value);
+ return list.filter(i=>(F.arch?!!i.arch:!i.arch)&&(!F.cat||i.cat===F.cat)&&(!F.grp||(F.grp==='-'?!i.grp:i.grp===F.grp))&&(!q||norm(i.name).includes(q)||(i.barcode||'').includes(q)||norm(i.sci||'').includes(q)));
+}
 function renderHome(){
- const real=items.filter(i=>!i.demo);
- const noP=items.filter(i=>!hasPrice(i)).length, stk=items.filter(i=>(i.batches||[]).length).length;
- $('#stats').innerHTML=items.length?`<span class="chip"><b>${fmt(items.length)}</b> صنف</span><span class="chip"><b>${fmt(stk)}</b> بمخزون</span>${noP?`<span class="chip warn">${ico('alert')}<b>${fmt(noP)}</b> بلا سعر</span>`:''}`:'';
+ if(F.grp&&F.grp!=='-'&&!S.groups.some(g=>g.id===F.grp))F.grp='';
+ const act=live(),arch=items.filter(i=>i.arch);
+ if(F.arch&&!arch.length)F.arch=false;
+ const noP=act.filter(i=>!hasPrice(i)).length, stk=act.filter(i=>(i.batches||[]).length).length;
+ $('#stats').innerHTML=items.length?`<span class="chip"><b>${fmt(act.length)}</b> صنف</span><span class="chip"><b>${fmt(stk)}</b> بمخزون</span>${noP?`<span class="chip warn">${ico('alert')}<b>${fmt(noP)}</b> بلا سعر</span>`:''}`:'';
  $('#searchBox').hidden=items.length<6;
  $('#empty').hidden=items.length>0;
- const q=norm($('#q').value);
- const rows=items.filter(i=>!q||norm(i.name).includes(q)||(i.barcode||'').includes(q)||norm(i.sci||'').includes(q));
- listEl.innerHTML=rows.map(i=>{
+ const fb=$('#fbar'),cats=[...new Set(act.map(i=>i.cat).filter(Boolean))];
+ const showBar=items.length>=3||S.groups.length||arch.length;
+ fb.hidden=!showBar;
+ if(showBar){
+  const cnt=g=>act.filter(i=>g==='-'?!i.grp:i.grp===g).length;
+  fb.innerHTML=`<button class="fchip ${!F.grp&&!F.arch?'on':''}" data-f="all">الكل ${fmt(act.length)}</button>`
+   +S.groups.map(g=>`<button class="fchip ${F.grp===g.id&&!F.arch?'on':''}" data-g="${g.id}">${esc(g.name)} ${fmt(cnt(g.id))}</button>`).join('')
+   +(S.groups.length&&act.some(i=>!i.grp)?`<button class="fchip ${F.grp==='-'&&!F.arch?'on':''}" data-g="-">بدون مجموعة</button>`:'')
+   +(arch.length?`<button class="fchip ${F.arch?'on':''}" data-f="arch">الأرشيف ${fmt(arch.length)}</button>`:'')
+   +(cats.length>1?`<button class="fchip ${F.cat?'on':''}" data-f="cat">الفئة${F.cat?': '+esc(F.cat):''} ▾</button>`:'')
+   +`<button class="fchip add" data-f="grps">+ مجموعات</button>`;
+ }
+ const rows=applyFilter(items);
+ listEl.innerHTML=rows.length?rows.map(i=>{
   const u=i.units.map(x=>`${esc(x.n)} ${x.price?fmt(x.price):'؟'}`).join(' · ');
-  return `<button class="row" data-id="${i.id}"><span class="thumb" data-ph="${i.photo?i.id:''}">${ico(i.service?'plus':'box')}</span>
-   <span class="rbody"><b>${esc(i.name)}</b><small>${esc(i.cat||'بلا فئة')}${i.barcode?' · '+esc(i.barcode):''}</small><small>${u}</small></span>
-   <span class="tags">${i.demo?'<span class="tag">تجريبي</span>':''}${!hasPrice(i)?'<span class="tag warn">بلا سعر</span>':''}${(i.batches||[]).length?`<span class="tag">${fmt(i.batches.length)} دفعة</span>`:''}</span></button>`}).join('');
+  return `<div class="row ${i.arch?'arch':''}" data-id="${i.id}" role="button" tabindex="0"><span class="thumb" data-ph="${i.photo?i.id:''}">${ico(i.service?'plus':'box')}</span>
+   <span class="rbody"><b>${esc(i.name)}</b><small>${esc(i.cat||'بلا فئة')}${i.barcode?' · '+esc(i.barcode):''}${i.grp?' · '+esc(grpName(i.grp)):''}</small><small>${u}</small></span>
+   <span class="tags">${i.demo?'<span class="tag">تجريبي</span>':''}${!hasPrice(i)?'<span class="tag warn">بلا سعر</span>':''}${(i.batches||[]).length?`<span class="tag">${fmt(i.batches.length)} دفعة</span>`:''}</span>
+   <button class="kb" data-k="${i.id}" type="button" aria-label="خيارات الصنف">${ico('dots')}</button></div>`}).join(''):(items.length?`<div class="empty" style="text-align:center">لا توجد أصناف ضمن هذا الفلتر.${F.cat||F.grp||$('#q').value?' <button class="link" id="clrF" type="button">إلغاء الفلتر</button>':''}</div>`:'');
+ const cf=$('#clrF');if(cf)cf.onclick=()=>{F.cat='';F.grp='';F.arch=false;$('#q').value='';renderHome()};
  listEl.querySelectorAll('[data-ph]').forEach(async el=>{const id=el.dataset.ph;if(!id)return;const u=await PH.get(id);if(u){el.style.backgroundImage=`url("${u}")`;el.innerHTML=''}});
+ const real=act.filter(i=>!i.demo);
  const ex=$('#btnExport');ex.hidden=!real.length;ex.innerHTML=`${ico('download')}<span>تصدير (${fmt(real.length)})</span>`;
  if(!storeOK&&!$('#stWarn')){const n=document.createElement('div');n.id='stWarn';n.className='note warn';n.textContent='التخزين المحلي غير متاح في هذا المتصفح. صدّر الملف قبل إغلاق الصفحة.';$('#stats').after(n)}
 }
+$('#fbar').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.g){F.grp=F.grp===b.dataset.g?'':b.dataset.g;F.arch=false;renderHome();return}
+ const f=b.dataset.f;
+ if(f==='all'){F.grp='';F.arch=false;F.cat='';renderHome()}
+ else if(f==='arch'){F.arch=!F.arch;renderHome()}
+ else if(f==='cat')pickFilterCat();
+ else if(f==='grps')openGroups();
+});
+function pickFilterCat(){
+ const act=live(),cats=[...new Set(act.map(i=>i.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+ openSheet(`<h2>فلترة حسب الفئة</h2><div class="stack"><button class="opt ${!F.cat?'on':''}" data-c="">كل الفئات</button>${cats.map(c=>`<button class="opt ${F.cat===c?'on':''}" data-c="${esc(c)}"><span>${esc(c)}</span><small>${fmt(act.filter(i=>i.cat===c).length)}</small></button>`).join('')}</div>`,sh=>{
+  sh.addEventListener('click',e=>{const o=e.target.closest('[data-c]');if(o){F.cat=o.dataset.c;closeSheet();renderHome()}})});
+}
+/* groups: only for tidiness on this device, never exported */
+function openGroups(){
+ const draw=sh=>{sh.querySelector('#gl').innerHTML=S.groups.length?S.groups.map(g=>`<div class="opt" style="gap:6px"><span style="flex:1">${esc(g.name)} <small style="color:var(--muted)">${fmt(items.filter(i=>i.grp===g.id).length)}</small></span><button class="btn sm" data-rn="${g.id}" type="button" style="height:34px">تسمية</button><button class="btn sm bad" data-dg="${g.id}" type="button" style="height:34px">حذف</button></div>`).join(''):'<p style="margin:0">لا توجد مجموعات بعد.</p>'};
+ openSheet(`<h2>المجموعات</h2><p>رتّب أصنافك في مجموعات (مثلا: رف الأطفال، الثلاجة). هي للترتيب هنا فقط ولا تدخل في ملف التصدير. حذف مجموعة لا يحذف أصنافها.</p><div class="stack" id="gl" style="margin-bottom:12px"></div><div style="display:flex;gap:8px"><input class="in" id="gn" placeholder="اسم مجموعة جديدة" style="flex:1"><button class="btn sm pri" id="gb" style="height:48px">إضافة</button></div>`,sh=>{
+  draw(sh);
+  const add=()=>{const v=sh.querySelector('#gn').value.trim();if(!v)return;if(S.groups.some(g=>norm(g.name)===norm(v))){toast('الاسم موجود','bad');return}S.groups.push({id:uid(),name:v});saveS();sh.querySelector('#gn').value='';draw(sh);renderHome()};
+  sh.querySelector('#gb').onclick=add;sh.querySelector('#gn').onkeydown=e=>{if(e.key==='Enter')add()};
+  sh.addEventListener('click',e=>{
+   const r=e.target.closest('[data-rn]'),d=e.target.closest('[data-dg]');
+   if(r){const g=S.groups.find(x=>x.id===r.dataset.rn);openSheet(`<h2>تسمية المجموعة</h2><input class="in" id="rn" value="${esc(g.name)}" style="margin-bottom:12px"><div class="stack"><button class="btn pri" id="rok">حفظ</button><button class="btn" id="rno">رجوع</button></div>`,s2=>{s2.querySelector('#rok').onclick=()=>{const v=s2.querySelector('#rn').value.trim();if(v){g.name=v;saveS()}openGroups();renderHome()};s2.querySelector('#rno').onclick=openGroups})}
+   if(d){const g=S.groups.find(x=>x.id===d.dataset.dg);confirmSheet('حذف المجموعة؟',`تُحذف مجموعة «${g.name}» وتبقى أصنافها كما هي.`,'حذف',()=>{S.groups=S.groups.filter(x=>x.id!==g.id);items.forEach(i=>{if(i.grp===g.id)i.grp=''});saveS();saveI();renderHome();openGroups()},true)}});
+ });
+}
+function pickGroup(cur,onPick){
+ openSheet(`<h2>المجموعة</h2><div class="stack"><button class="opt ${!cur?'on':''}" data-g="">بدون مجموعة</button>${S.groups.map(g=>`<button class="opt ${cur===g.id?'on':''}" data-g="${g.id}"><span>${esc(g.name)}</span>${cur===g.id?ico('check'):''}</button>`).join('')}</div><div style="display:flex;gap:8px;margin-top:12px"><input class="in" id="gn" placeholder="مجموعة جديدة" style="flex:1"><button class="btn sm pri" id="gb" style="height:48px">إضافة</button></div>`,sh=>{
+  sh.addEventListener('click',e=>{const o=e.target.closest('[data-g]');if(o){closeSheet();onPick(o.dataset.g)}});
+  sh.querySelector('#gb').onclick=()=>{const v=sh.querySelector('#gn').value.trim();if(!v)return;let g=S.groups.find(x=>norm(x.name)===norm(v));if(!g){g={id:uid(),name:v};S.groups.push(g);saveS()}closeSheet();onPick(g.id)}});
+}
+/* item menu (the three dots on every row) */
+function itemMenu(it){
+ openSheet(`<h2>${esc(it.name)}</h2><div class="stack">
+  <button class="opt" data-a="edit"><span>تعديل</span>${ico('chev')}</button>
+  <button class="opt" data-a="grp"><span>نقل إلى مجموعة${it.grp?' (الحالية: '+esc(grpName(it.grp))+')':''}</span>${ico('chev')}</button>
+  <button class="opt" data-a="arch"><span>${it.arch?'إرجاع من الأرشيف':'أرشفة'}</span>${ico('box')}</button>
+  <button class="opt" data-a="del" style="color:var(--bad)"><span>حذف</span>${ico('trash')}</button></div>`,sh=>{
+  sh.addEventListener('click',e=>{const o=e.target.closest('[data-a]');if(!o)return;const a=o.dataset.a;
+   if(a==='edit'){closeSheet();openEditor(it)}
+   else if(a==='grp')pickGroup(it.grp||'',g=>{it.grp=g;saveI();renderHome();toast(g?'نُقل إلى «'+grpName(g)+'»':'أُزيل من المجموعة')});
+   else if(a==='arch'){it.arch=!it.arch;saveI();closeSheet();renderHome();toast(it.arch?'نُقل إلى الأرشيف. لا يدخل في التصدير.':'أُرجع من الأرشيف')}
+   else if(a==='del')confirmSheet('حذف الصنف؟',`سيُحذف «${it.name}» من هذا الجهاز نهائيا. يمكنك الأرشفة بدلا من الحذف.`,'حذف',()=>{items=items.filter(x=>x.id!==it.id);PH.del(it.id);saveI();renderHome();toast('تم الحذف')},true)})});
+}
 $('#q').addEventListener('input',renderHome);
-listEl.addEventListener('click',e=>{const r=e.target.closest('.row');if(r)openEditor(items.find(i=>i.id===r.dataset.id))});
+listEl.addEventListener('click',e=>{const k=e.target.closest('[data-k]');if(k){e.stopPropagation();const it=items.find(i=>i.id===k.dataset.k);it&&itemMenu(it);return}const r=e.target.closest('.row');if(r)openEditor(items.find(i=>i.id===r.dataset.id))});
+listEl.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('row')){e.preventDefault();openEditor(items.find(i=>i.id===e.target.dataset.id))}});
 $('#btnHelp').innerHTML=ico('help');$('#btnMenu').innerHTML=ico('dots');
 $('#btnNew').innerHTML=ico('plus')+'<span>صنف جديد</span>';
 $('#btnNew').onclick=()=>openEditor(null);
@@ -373,7 +475,7 @@ $('#btnDemo').onclick=loadDemo;
 /* ---------- editor state ---------- */
 const ed=$('#editor');
 let E=null,busy=false,samp=null,dlcap=null;
-const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',exp:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,createdAt:Date.now()});
+const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',exp:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,grp:(F.grp&&F.grp!=='-'?F.grp:''),arch:false,createdAt:Date.now()});
 let warmT=0;
 function warm(){if(samp||Date.now()-warmT<240000)return;warmT=Date.now();fetch('/api/scan',{headers:{'x-access-code':S.code||''}}).catch(()=>{})}
 function openEditor(it){
@@ -396,7 +498,7 @@ function fillForm(){
  $('#svcTgl').setAttribute('aria-pressed',String(d.service));
  $('#nameLang').textContent=S.nameLang==='en'?'EN':'ع';
  $('#fName').classList.toggle('ltr',S.nameLang==='en');
- renderCat();renderUnits();renderBatches();paintPhoto();applyService();refresh();
+ renderCat();renderUnits();renderBatches();paintPhoto();paintGrp();applyService();refresh();
 }
 function applyService(){
  const s=E.d.service;$('#cam').hidden=s;$('#stockSec').hidden=s;$('#fBar').closest('.f').hidden=s;$('#expF').hidden=s;$('#catLbl').textContent='الفئة';
@@ -413,6 +515,8 @@ $('#fName').addEventListener('input',e=>{E.d.name=e.target.value;E.touched.name=
 $('#fSci').addEventListener('input',e=>{E.d.sci=e.target.value;E.touched.sci=true;refresh()});
 $('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'').slice(0,14);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
 $('#fShelf').addEventListener('input',e=>{E.d.shelf=e.target.value});
+function paintGrp(){const n=grpName(E.d.grp);$('#fGrp').innerHTML=(n?`<span>${esc(n)}</span>`:'<span class="ph">بدون مجموعة</span>')+ico('chev')}
+$('#fGrp').onclick=()=>pickGroup(E.d.grp||'',g=>{E.d.grp=g;paintGrp()});
 function paintExp(){const on=!!S.useExp;$('#expTgl').textContent=on?'مفعّل':'تفعيل';$('#expTgl').setAttribute('aria-pressed',String(on));$('#fExp').hidden=!on;$('#expHint').textContent=on?'يُقرأ من العلبة إن كان مكتوبا. اتركه فارغا إن لم يكن له تاريخ.':'';}
 $('#expTgl').onclick=()=>{S.useExp=!S.useExp;saveS();paintExp();refresh()};
 function syncBatchExp(old,v){E.d.batches.forEach(b=>{if(!b.exp||b.exp===old)b.exp=v});renderBatches()}
@@ -447,7 +551,7 @@ function renderUnits(){
  $('#units').innerHTML=d.units.map((u,i)=>`<div class="unit" data-i="${i}">
   <input class="in u-n" placeholder="${i?'اسم الوحدة (علبة…)':'أصغر وحدة تُباع (حبة…)'}" value="${esc(u.n)}" aria-label="اسم الوحدة">
   <input class="in num u-p" inputmode="decimal" placeholder="السعر" value="${u.price===''||u.price==null?'':esc(u.price)}" aria-label="السعر">
-  ${i?`<div class="fx"><span>تحتوي على</span><input class="in num u-f" inputmode="numeric" placeholder="كم" value="${u.f&&u.f>1?esc(u.f):''}" aria-label="العدد"><span>${esc(base)}</span><button class="btn sm rm" data-rm="${i}" type="button" style="margin-inline-start:auto;height:34px">حذف</button></div>`:''}
+  ${i?`<div class="fx"><span>تحتوي على</span><input class="in num u-f" inputmode="numeric" placeholder="كم" value="${u.f&&u.f>1?esc(u.f):''}" aria-label="العدد"><span>${esc(base)}</span><button class="btn sm rm" data-rm="${i}" type="button" style="margin-inline-start:auto;height:34px">حذف</button></div>`:(d.units.length>1?`<div class="fx"><button class="btn sm" data-rm="0" type="button" style="margin-inline-start:auto;height:34px">حذف الوحدة الصغرى</button></div>`:'')}
  </div>`).join('');
  const used=new Set(d.units.map(u=>u.n));
  $('#unitChips').innerHTML=UNIT_PRESETS.filter(p=>!used.has(p)).map(p=>`<button class="chipbtn" data-add="${p}" type="button">+ ${p}</button>`).join('')+`<button class="chipbtn add" data-add="" type="button">+ وحدة أخرى</button>`;
@@ -459,7 +563,7 @@ $('#units').addEventListener('input',e=>{
  if(e.target.classList.contains('u-f')){const v=toEn(e.target.value).replace(/\D/g,'');e.target.value=v;u.f=v?+v:1}
  refresh()});
 $('#units').addEventListener('change',e=>{if(e.target.classList.contains('u-n')){E.d.units[+e.target.closest('.unit').dataset.i].n=e.target.value.trim();renderUnits();renderBatches()}});
-$('#units').addEventListener('click',e=>{const r=e.target.closest('[data-rm]');if(r){E.d.units.splice(+r.dataset.rm,1);renderUnits();renderBatches();refresh()}});
+$('#units').addEventListener('click',e=>{const r=e.target.closest('[data-rm]');if(r){E.d.units.splice(+r.dataset.rm,1);if(E.d.units[0])E.d.units[0].f=1;renderUnits();renderBatches();refresh()}});
 $('#unitChips').addEventListener('click',e=>{
  const b=e.target.closest('[data-add]');if(!b)return;const n=b.dataset.add,d=E.d;
  if(d.units.length===1&&!d.units[0].n&&n){d.units[0].n=n}else d.units.push({n,f:n==='شريط'?10:1,price:''});
@@ -493,12 +597,43 @@ $('#batches').addEventListener('change',e=>{
  if(e.target.classList.contains('b-e'))b.exp=e.target.value;refresh()});
 $('#batches').addEventListener('click',e=>{const r=e.target.closest('[data-rmb]');if(r){E.d.batches.splice(+r.dataset.rmb,1);renderBatches();refresh()}});
 
+/* crop: pan and zoom one picture inside a frame, rotate in 90° steps */
+const CR={img:null,rot:0,z:1,ox:0,oy:0,vw:300,vh:300,ar:1,maxW:1024,cb:null,drag:null};
+async function openCrop(src,ar,maxW,cb){
+ let blob=src;
+ if(typeof src==='string'){try{blob=await (await fetch(src)).blob()}catch{toast('تعذّر فتح الصورة','bad');return}}
+ let img;try{img=await createImageBitmap(blob)}catch{toast('تعذّر فتح الصورة','bad');return}
+ Object.assign(CR,{img,rot:0,z:1,ox:0,oy:0,ar,maxW,cb});
+ CR.vw=Math.min(innerWidth-32,380);CR.vh=Math.round(CR.vw/ar);
+ $('#cropZ').value=1;$('#crop').hidden=false;drawCrop();
+}
+function cropGeom(){
+ const w=CR.img.width,h=CR.img.height,q=CR.rot%180,rw=q?h:w,rh=q?w:h;
+ const s=Math.max(CR.vw/rw,CR.vh/rh)*CR.z,mx=Math.max(0,(rw*s-CR.vw)/2),my=Math.max(0,(rh*s-CR.vh)/2);
+ CR.ox=Math.max(-mx,Math.min(mx,CR.ox));CR.oy=Math.max(-my,Math.min(my,CR.oy));
+ return {w,h,s};
+}
+function paintCrop(ctx,k,g){ctx.save();ctx.translate(CR.vw*k/2+CR.ox*k,CR.vh*k/2+CR.oy*k);ctx.rotate(CR.rot*Math.PI/180);ctx.scale(g.s*k,g.s*k);ctx.drawImage(CR.img,-g.w/2,-g.h/2);ctx.restore()}
+function drawCrop(){const cv=$('#cropC'),k=2;cv.width=CR.vw*k;cv.height=CR.vh*k;cv.style.width=CR.vw+'px';cv.style.height=CR.vh+'px';const ctx=cv.getContext('2d');ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);paintCrop(ctx,k,cropGeom())}
+function cropOut(){const W=Math.min(CR.maxW,1024),H=Math.round(W*CR.vh/CR.vw),c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);paintCrop(ctx,W/CR.vw,cropGeom());return c}
+(()=>{const cv=$('#cropC');
+ cv.addEventListener('pointerdown',e=>{CR.drag={x:e.clientX,y:e.clientY,ox:CR.ox,oy:CR.oy};cv.setPointerCapture(e.pointerId)});
+ cv.addEventListener('pointermove',e=>{if(!CR.drag)return;CR.ox=CR.drag.ox+(e.clientX-CR.drag.x);CR.oy=CR.drag.oy+(e.clientY-CR.drag.y);drawCrop()});
+ const end=()=>{CR.drag=null};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+ $('#cropZ').addEventListener('input',e=>{CR.z=+e.target.value;drawCrop()});
+ $('#cropRot').onclick=()=>{CR.rot=(CR.rot+90)%360;CR.ox=0;CR.oy=0;drawCrop()};
+ const close=()=>{$('#crop').hidden=true;CR.img=null;CR.cb=null};
+ $('#cropNo').onclick=close;
+ $('#cropOk').onclick=()=>{const cb=CR.cb,c=cropOut();close();cb&&cb(c)};
+})();
+
 /* photo */
 function paintPhoto(){
  const pv=$('#pv'),has=E.photoURL&&!E.photoDel;
- pv.style.backgroundImage=has?`url("${E.photoURL}")`:'';pv.innerHTML=has?'':ico('image');$('#phDel').hidden=!has;
+ pv.style.backgroundImage=has?`url("${E.photoURL}")`:'';pv.innerHTML=has?'':ico('image');$('#phDel').hidden=!has;$('#phCrop').hidden=!has;
 }
-async function pickPhoto(f){if(!f||!E)return;try{E.photoURL=await toDataURL(await shrink(f,360,.72));E.photoDel=false;paintPhoto()}catch{toast('تعذّر قراءة الصورة','bad')}}
+function pickPhoto(f){if(!f||!E)return;openCrop(f,1,640,c=>{if(!E)return;E.photoURL=c.toDataURL('image/jpeg',.82);E.photoDel=false;paintPhoto()})}
+$('#phCrop').onclick=()=>{if(E&&E.photoURL)openCrop(E.photoURL,1,640,c=>{if(!E)return;E.photoURL=c.toDataURL('image/jpeg',.82);E.photoDel=false;paintPhoto()})};
 $('#phCap').onchange=e=>{pickPhoto(e.target.files[0]);e.target.value=''};
 $('#phGal').onchange=e=>{pickPhoto(e.target.files[0]);e.target.value=''};
 $('#phDel').onclick=()=>{E.photoURL=null;E.photoDel=true;paintPhoto()};
@@ -523,7 +658,7 @@ function refresh(){
 
 /* ---------- camera: live, no shutter ---------- */
 const cam={el:$('#cam'),video:$('#video'),stream:null,det:null,state:'idle'};
-$('#camIcon').innerHTML=ico('camera');$('#galBtn').innerHTML=ico('image');
+$('#camIcon').innerHTML=ico('camera');$('#camMore').innerHTML=ico('dots');
 const setCam=s=>{cam.state=s;cam.el.dataset.state=s};
 const setMsg=t=>{$('#camMsg').textContent=t||''};
 const FORMATS=['ean_13','ean_8','upc_a'];
@@ -532,9 +667,9 @@ async function camStart(){
  if(cam.stream){if(cam.video.srcObject!==cam.stream)cam.video.srcObject=cam.stream;cam.video.play().catch(()=>{});setCam('live');liveStart();return}
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){noLive();return}
  try{
-  cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+  cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160},frameRate:{ideal:30}},audio:false});
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
-  restoreFocus();setTimeout(restoreFocus,600);
+  restoreFocus();setTimeout(restoreFocus,600);if(S.torch)setTorch(true);
   if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
   liveStart();
  }catch(e){cam.stream=null;noLive(e)}
@@ -543,7 +678,7 @@ function noLive(e){
  setCam('nolive');
  $('#camHint').textContent=e&&e.name==='NotAllowedError'?'الكاميرا المباشرة غير مسموحة هنا. اسمح بها من إعدادات المتصفح، أو افتح الموقع من رابطه الخاص. ويمكنك الآن التقاط صورة.':'الكاميرا المباشرة غير متاحة. سيُفتح تطبيق الكاميرا لالتقاط صورة.';
 }
-function camStop(){clearTimeout(L.t);if(cam.stream){cam.stream.getTracks().forEach(t=>t.stop());cam.stream=null}cam.video.srcObject=null;setCam('idle');setMsg('')}
+function camStop(){clearTimeout(L.t);barStop();if(cam.stream){cam.stream.getTracks().forEach(t=>t.stop());cam.stream=null}cam.video.srcObject=null;setCam('idle');setMsg('')}
 
 /* EAN-13 / EAN-8 / UPC-A scanline decoder: fallback for browsers without BarcodeDetector (iPhone Safari, Firefox) */
 const EL=[[3,2,1,1],[2,2,2,1],[2,1,2,2],[1,4,1,1],[1,1,3,2],[1,2,3,1],[1,1,1,4],[1,3,1,2],[1,2,1,3],[3,1,1,2]];
@@ -610,6 +745,22 @@ async function shrink(blob,max,q){
 const toDataURL=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(b)});
 function frameBlob(max,q){const v=cam.video,k=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise(ok=>c.toBlob(ok,'image/jpeg',q))}
 
+/* barcode: separate fast loop, runs whenever the code is missing, whatever the hand is doing */
+let barI=0;
+function barStart(){clearInterval(barI);barI=setInterval(barTick,120)}
+function barStop(){clearInterval(barI);barI=0}
+async function barTick(){
+ if(!E||cam.state!=='live'||E.d.service||E.touched.barcode||L.decBusy)return;
+ if(E.d.barcode&&!E.barWarn)return;
+ const v=cam.video;if(v.paused||!v.videoWidth)return;
+ L.decBusy=true;L.tick++;
+ try{
+  const code=await detectCode(v,L.tick);
+  if(!E)return;
+  if(!code){if(++L.miss>8)L.blockBar='';return}
+  L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30);
+ }catch{}finally{L.decBusy=false}
+}
 /* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
 const L={manual:false,manualAt:0,sweeping:false,blurAt:0,restAt:0,focusAt:0,t:0,prev:null,steadyAt:0,moved:false,needMove:false,sharp:0,sharpMax:1,typedAt:-1e9,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
 const GW=128,GH=96;
@@ -618,7 +769,7 @@ function grayOf(v){gx.drawImage(v,0,0,GW,GH);const d=gx.getImageData(0,0,GW,GH).
 function sharpOf(g){let s=0,s2=0,n=0;for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-GW]-g[i+GW];s+=l;s2+=l*l;n++}const m=s/n;return s2/n-m*m}
 function sdOf(g){let s=0,s2=0;const n=g.length;for(let i=0;i<n;i+=3){s+=g[i];s2+=g[i]*g[i]}const k=Math.ceil(n/3),m=s/k;return Math.sqrt(Math.max(0,s2/k-m*m))}
 const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
-function liveStart(){clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;L.moved=false;liveTick()}
+function liveStart(){barStart();clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;L.moved=false;liveTick()}
 async function liveTick(){
  clearTimeout(L.t);
  if(!E||cam.state!=='live'||ed.hidden)return;
@@ -631,13 +782,7 @@ async function liveTick(){
  if(motion<12){if(!L.steadyAt)L.steadyAt=now}else L.steadyAt=0;
  if(L.manual&&(motion>18||now-L.manualAt>6000))restoreFocus();
  const blurry=L.sharp<L.sharpMax*0.5;
- if(blurry&&L.steadyAt&&!L.sweeping&&!L.aiBusy&&!E.d.name.trim()){if(!L.blurAt)L.blurAt=now;if(now-L.blurAt>900&&now-L.focusAt>3000){L.blurAt=0;focusSweep()}}else if(!blurry)L.blurAt=0;
- const needBar=!E.touched.barcode&&(!E.d.barcode||E.barWarn);
- if(needBar&&!L.decBusy&&motion<14){
-  L.decBusy=true;L.tick++;
-  detectCode(v,L.tick).then(code=>{L.decBusy=false;if(!E||!code){if(!code&&++L.miss>8)L.blockBar='';return}
-   L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30)}).catch(()=>{L.decBusy=false});
- }
+ if(blurry&&L.steadyAt&&!L.sweeping&&!L.aiBusy){if(!L.blurAt)L.blurAt=now;if(now-L.blurAt>700&&now-L.focusAt>3500){L.blurAt=0;focusSweep()}}else if(!blurry)L.blurAt=0;
  const hasName=!!E.d.name.trim(),needName=!hasName,needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
  const typing=now-L.typedAt<4000;
  if(L.paused&&L.restAt&&!L.aiBusy&&L.moved&&motion<12&&gdiff(g,L.last)>22&&(E.autoTotal||0)<9){L.paused=false;L.restAt=0;E.tries=0;E.autoTotal=(E.autoTotal||0)+1}   // clear scene change after a rest: try again
@@ -715,6 +860,25 @@ async function tapFocus(ev){
  setTimeout(()=>{restoreFocus();L.blurAt=0},1400);setTimeout(forceRead,1000);
 }
 cam.video.addEventListener('click',tapFocus);
+async function setTorch(on){
+ const tr=track(),cap=tr&&tr.getCapabilities?tr.getCapabilities():{};
+ if(!cap.torch){S.torch=false;saveS();if(!on)return;toast('الفلاش غير متاح على هذا الجهاز أو المتصفح','bad');return}
+ try{await tr.applyConstraints({advanced:[{torch:!!on}]});S.torch=!!on;saveS();toast(on?'الفلاش مفعّل':'الفلاش متوقف')}catch{toast('تعذّر تشغيل الفلاش','bad')}
+}
+function openCamMenu(){
+ openSheet(`<h2>خيارات الكاميرا</h2><div class="stack">
+  <button class="opt" data-a="gal"><span>اختيار صورة من المعرض</span>${ico('image')}</button>
+  <button class="opt" data-a="cap"><span>التقاط صورة بالكاميرا</span>${ico('camera')}</button>
+  <button class="opt ${S.torch?'on':''}" data-a="torch"><span>الفلاش: ${S.torch?'مفعّل':'متوقف'}</span>${ico('bolt')}</button>
+  <button class="opt" data-a="focus"><span>إعادة ضبط التركيز</span>${ico('focus')}</button></div>
+  <p style="margin:10px 0 0;font-size:13px">يُحفظ آخر إعداد للفلاش ويُطبَّق عند فتح الكاميرا التالية.</p>`,sh=>{
+  sh.addEventListener('click',e=>{const o=e.target.closest('[data-a]');if(!o)return;const a=o.dataset.a;
+   if(a==='gal'){closeSheet();$('#galIn').click()}
+   else if(a==='cap'){closeSheet();$('#capIn').click()}
+   else if(a==='torch'){closeSheet();setTorch(!S.torch)}
+   else if(a==='focus'){closeSheet();restoreFocus();focusSweep();toast('أُعيد ضبط التركيز')}})});
+}
+$('#camMore').onclick=e=>{e.stopPropagation();openCamMenu()};
 function guide(){
  if(!E||cam.state!=='live'||E.d.service)return;
  const hn=!!E.d.name.trim(),hb=!!E.d.barcode&&!E.barWarn,wantExp=S.useExp&&!E.d.exp&&(E.expTries||0)<3;
@@ -723,8 +887,9 @@ function guide(){
  setMsg(!hn?'ثبّت اسم الدواء داخل الإطار':!hb?'الآن وجّه الباركود':wantExp?'وجّه تاريخ الانتهاء إن كان مكتوبا':'اكتمل. راجع الحقول واحفظ');
  if(hn&&hb&&!wantExp&&!E.doneShown){E.doneShown=true;cam.el.classList.add('done');navigator.vibrate&&navigator.vibrate([20,40,20]);setTimeout(()=>cam.el.classList.remove('done'),900)}
 }
-$('#capIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
-$('#galIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)analyze(f)};
+$('#capIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)pickForAI(f)};
+$('#galIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)pickForAI(f)};
+function pickForAI(f){openCrop(f,4/3,1024,c=>c.toBlob(b=>b&&analyze(b),'image/jpeg',.92))}
 
 /* ---------- AI ---------- */
 function buildPrompt(lang,cats){
@@ -880,7 +1045,7 @@ async function save(next){
   exp:d.exp||'',
   units:d.units.map((u,i)=>({n:u.n.trim(),f:i?+u.f:1,price:u.price===''||u.price==null?null:+u.price})),
   batches:d.service?[]:d.batches.filter(b=>+b.qty>0).map(b=>({id:b.id||uid(),no:(b.no||'').trim(),exp:b.exp||'',qty:+b.qty,unit:b.unit,cost:b.cost===''||b.cost==null?null:+b.cost})),
-  photo:!!(E.photoURL&&!E.photoDel),createdAt:d.createdAt,updatedAt:Date.now()};
+  photo:!!(E.photoURL&&!E.photoDel),grp:d.grp||'',arch:!!d.arch,createdAt:d.createdAt,updatedAt:Date.now()};
  if(d.demo)out.demo=true;
  if(E.photoURL&&!E.photoDel)await PH.set(out.id,E.photoURL);else if(E.photoDel)await PH.del(out.id);
  const i=items.findIndex(x=>x.id===out.id);if(i>=0)items[i]=out;else items.unshift(out);
@@ -891,29 +1056,73 @@ $('#btnSave').onclick=()=>save(false);$('#btnNext').onclick=()=>save(true);
 $('#btnDel').onclick=()=>confirmSheet('حذف الصنف؟',`سيُحذف «${E.d.name}» من هذا الجهاز.`,'حذف',()=>{items=items.filter(x=>x.id!==E.d.id);PH.del(E.d.id);saveI();toast('تم الحذف');closeEditor(true)},true);
 
 /* ---------- export ---------- */
-function buildExport(withPhotos){
- const real=items.filter(i=>!i.demo);
- return Promise.all(real.map(async it=>{
+function buildExport(withPhotos,list){
+ return Promise.all(list.map(async it=>{
   const o={id:it.id,name:it.name,sci:it.sci||'',cat:it.cat,barcode:it.barcode||'',exp:it.exp||'',shelf:it.shelf||'',min:it.min,service:!!it.service,
    units:it.units.map(u=>({n:u.n,f:u.f,price:u.price})),
    batches:(it.batches||[]).map(b=>{const f=baseOf(it,b.unit);return {no:b.no||'',exp:b.exp||'',unit:b.unit,qty:b.qty,qtyBase:b.qty*f,cost:b.cost,costBase:b.cost==null?null:Math.round(b.cost/f*10000)/10000}})};
   if(withPhotos&&it.photo){const p=await PH.get(it.id);if(p)o.photo=p}
-  return o})).then(list=>({schema:'pharmora-items',version:1,source:'pharmora-assistant',exportedAt:new Date().toISOString(),nameLang:S.nameLang||'ar',categories:[...new Set(list.map(x=>x.cat).filter(Boolean))],items:list}));
+  return o})).then(out=>({schema:'pharmora-items',version:1,source:'pharmora-assistant',exportedAt:new Date().toISOString(),nameLang:S.nameLang||'ar',categories:[...new Set(out.map(x=>x.cat).filter(Boolean))],items:out}));
+}
+/* export scope: all, one group, one category, or hand-picked items. Archived items only when asked. Groups never leave the device. */
+let EX={mode:'all',val:'',arch:false,ids:new Set(),photos:false};
+function exList(){
+ let l=items.filter(i=>!i.demo&&(EX.arch||!i.arch));
+ if(EX.mode==='grp')l=l.filter(i=>EX.val==='-'?!i.grp:i.grp===EX.val);
+ else if(EX.mode==='cat')l=l.filter(i=>i.cat===EX.val);
+ else if(EX.mode==='pick')l=l.filter(i=>EX.ids.has(i.id));
+ return l;
 }
 function openExport(){
  const real=items.filter(i=>!i.demo);
- const c={svc:real.filter(i=>i.service).length,np:real.filter(i=>!hasPrice(i)).length,nb:real.filter(i=>!i.service&&!i.barcode).length,st:real.filter(i=>(i.batches||[]).length).length,ph:real.filter(i=>i.photo).length};
+ EX={mode:'all',val:'',arch:false,ids:new Set(real.filter(i=>!i.arch).map(i=>i.id)),photos:false};
+ const hasArch=real.some(i=>i.arch),hasPh=real.some(i=>i.photo);
  const canShare=!!(navigator.canShare&&navigator.share);
- openSheet(`<h2>تصدير ملف الاستيراد</h2><p>ملف واحد تستورده في فارمورا من المخزون والأدوية ثم أدوات المخزون.</p>
-  <div style="margin-bottom:12px"><div class="kv"><span>عدد الأصناف</span><b>${fmt(real.length)}</b></div><div class="kv"><span>خدمات</span><b>${fmt(c.svc)}</b></div><div class="kv"><span>بكمية موجودة (ستصبح دفعات)</span><b>${fmt(c.st)}</b></div>
-  ${c.np?`<div class="kv" style="color:var(--warn)"><span>بلا سعر كامل</span><b>${fmt(c.np)}</b></div>`:''}${c.nb?`<div class="kv" style="color:var(--warn)"><span>بلا باركود</span><b>${fmt(c.nb)}</b></div>`:''}</div>
-  ${c.ph?`<button class="tgl" id="exPh" type="button" aria-pressed="false" style="margin-bottom:12px"><span>تضمين الصور<small>يكبّر حجم الملف</small></span><i class="sw"></i></button>`:''}
+ openSheet(`<h2>تصدير ملف الاستيراد</h2>
+  <p>اختر ما تريد تصديره ثم احفظ الملف.</p>
+  <div class="seg" id="exMode" style="margin-bottom:10px"><button data-m="all">الكل</button><button data-m="grp">مجموعة</button><button data-m="cat">فئة</button><button data-m="pick">محددة</button></div>
+  <div class="chips" id="exVal" style="margin-bottom:10px"></div>
+  <div class="pickList" id="exPick" hidden></div>
+  ${hasArch?`<button class="tgl" id="exArch" type="button" aria-pressed="false" style="margin-bottom:10px"><span>تضمين الأرشيف<small>افتراضيا لا يدخل المؤرشف</small></span><i class="sw"></i></button>`:''}
+  ${hasPh?`<button class="tgl" id="exPh" type="button" aria-pressed="false" style="margin-bottom:10px"><span>تضمين الصور<small>يكبّر حجم الملف</small></span><i class="sw"></i></button>`:''}
+  <div style="margin-bottom:12px">
+   <div class="kv"><span>عدد الأصناف في الملف</span><b id="exN">0</b></div>
+   <div class="kv"><span>بكمية موجودة (ستصبح دفعات)</span><b id="exSt">0</b></div>
+   <div class="kv" id="exNpRow" style="color:var(--warn)"><span>بلا سعر كامل</span><b id="exNp">0</b></div>
+   <div class="kv" id="exNbRow" style="color:var(--warn)"><span>بلا باركود</span><b id="exNb">0</b></div>
+  </div>
+  <div class="note" style="margin-bottom:12px">عند الاستيراد في فارمورا تُتخطى الأصناف المكررة (نفس الاسم أو نفس الباركود)، ولا تُحدَّث ولا تُضاف دفعاتها. فاستيراد الملف مرتين لا يكرر شيئا. وإن أردت زيادة كمية صنف موجود فأضفها من فارمورا نفسها.</div>
   <div class="stack"><button class="btn pri" id="exSave">${ico('download')}<span>حفظ الملف</span></button>${canShare?`<button class="btn" id="exShare">${ico('share')}<span>مشاركة</span></button>`:''}</div>`,s=>{
-  const ph=()=>s.querySelector('#exPh')?.getAttribute('aria-pressed')==='true';
-  s.querySelector('#exPh')&&(s.querySelector('#exPh').onclick=e=>{const b=e.currentTarget;b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'))});
+  const flag=(id)=>s.querySelector(id)?.getAttribute('aria-pressed')==='true';
+  const tog=id=>{const b=s.querySelector(id);if(!b)return;b.onclick=()=>{b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));EX.arch=flag('#exArch');EX.photos=flag('#exPh');draw()}};
+  tog('#exArch');tog('#exPh');
+  const cats=()=>[...new Set(items.filter(i=>!i.demo).map(i=>i.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const draw=()=>{
+   const list=exList();
+   s.querySelectorAll('#exMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===EX.mode));
+   const vEl=s.querySelector('#exVal');
+   const vals=EX.mode==='grp'?[['-','بدون مجموعة'],...S.groups.map(g=>[g.id,g.name])]:EX.mode==='cat'?cats().map(c=>[c,c]):[];
+   vEl.hidden=!vals.length;
+   vEl.innerHTML=vals.map(([v,t])=>{const n=items.filter(i=>!i.demo&&(EX.arch||!i.arch)&&(EX.mode==='grp'?(v==='-'?!i.grp:i.grp===v):i.cat===v)).length;return `<button class="chipbtn ${EX.val===v?'on':''}" data-v="${esc(v)}" type="button">${esc(t)} <small>${fmt(n)}</small></button>`}).join('');
+   const pl=s.querySelector('#exPick');
+   pl.hidden=EX.mode!=='pick';
+   if(!pl.hidden){const all=items.filter(i=>!i.demo&&(EX.arch||!i.arch));
+    pl.innerHTML=all.length?all.map(i=>`<button class="pk ${EX.ids.has(i.id)?'on':''}" data-id="${i.id}" type="button"><span class="bx">${EX.ids.has(i.id)?ico('check'):''}</span><span style="flex:1;text-align:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.name)}</span><small style="color:var(--muted)">${esc(i.cat||'')}</small></button>`).join(''):'<p style="margin:8px 0">لا توجد أصناف.</p>'}
+   s.querySelector('#exN').textContent=fmt(list.length);
+   s.querySelector('#exSt').textContent=fmt(list.filter(i=>(i.batches||[]).length).length);
+   s.querySelector('#exNp').textContent=fmt(list.filter(i=>!hasPrice(i)).length);
+   s.querySelector('#exNb').textContent=fmt(list.filter(i=>!i.service&&!i.barcode).length);
+   s.querySelector('#exNpRow').hidden=!list.some(i=>!hasPrice(i));s.querySelector('#exNbRow').hidden=!list.some(i=>!i.service&&!i.barcode);
+   s.querySelector('#exSave').disabled=!list.length;
+   const sh=s.querySelector('#exShare');if(sh)sh.disabled=!list.length;
+  };
+  s.querySelector('#exMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;EX.mode=b.dataset.m;EX.val=EX.mode==='grp'||EX.mode==='cat'?'':EX.val;draw()};
+  s.querySelector('#exVal').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;EX.val=b.dataset.v;draw()};
+  s.querySelector('#exPick').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;const id=b.dataset.id;EX.ids.has(id)?EX.ids.delete(id):EX.ids.add(id);draw()};
   const name=()=>`pharmora-items-${new Date().toISOString().slice(0,10)}.json`;
-  s.querySelector('#exSave').onclick=async()=>{const t=JSON.stringify(await buildExport(ph()),null,1);await saveFile(name(),t)};
-  s.querySelector('#exShare')&&(s.querySelector('#exShare').onclick=async()=>{const t=JSON.stringify(await buildExport(ph()),null,1);const f=new File([t],name(),{type:'application/json'});try{await navigator.share({files:[f],title:'أصناف فارمورا'})}catch(e){if(e&&e.name!=='AbortError')toast('تعذّرت المشاركة','bad')}});
+  s.querySelector('#exSave').onclick=async()=>{const t=JSON.stringify(await buildExport(EX.photos,exList()),null,1);await saveFile(name(),t)};
+  s.querySelector('#exShare')&&(s.querySelector('#exShare').onclick=async()=>{const t=JSON.stringify(await buildExport(EX.photos,exList()),null,1);const f=new File([t],name(),{type:'application/json'});try{await navigator.share({files:[f],title:'أصناف فارمورا'})}catch(e){if(e&&e.name!=='AbortError')toast('تعذّرت المشاركة','bad')}});
+  draw();
  });
 }
 async function saveFile(filename,text){
@@ -922,11 +1131,14 @@ async function saveFile(filename,text){
 }
 
 /* ---------- menu, help, first run, demo ---------- */
-$('#btnHelp').onclick=()=>openSheet(`<h2>ما هذا الموقع؟</h2><p>أداة منفصلة عن فارمورا تسرّع إدخال الأصناف أول مرة. تصوّر الدواء بالجوال فتُقرأ بياناته، وتخرج بملف واحد يستورده النظام.</p>
- <ol class="steps help"><li><span>اضغط «صنف جديد» وثبّت الكاميرا على اسم الدواء. يُقرأ تلقائيا بدون التقاط صورة، ثم وجّهها إلى الباركود.</span></li><li><span>تنتقل البيانات إلى الحقول. العلامة الخضراء تعني أن الحقل اكتمل، وكل شيء قابل للتعديل. الكاميرا المباشرة تعمل من رابط الموقع الخاص وليس من المعاينة داخل Claude.</span></li><li><span>أضف الوحدات والأسعار. وإن كانت الكمية موجودة في الصيدلية فأدخلها كدفعة.</span></li><li><span>«حفظ والتالي» ينقلك مباشرة للصنف التالي.</span></li><li><span>في النهاية «تصدير» ثم في فارمورا: المخزون والأدوية، أدوات المخزون، استيراد من فارمورا المساعد.</span></li></ol>
- <div class="note warn" style="margin-bottom:10px">الأصناف هي قائمة الأدوية العامة. الكمية الموجودة فعليا اختيارية وتُضاف كدفعة عند الاستيراد.</div>
- <p>تاريخ الانتهاء حقل اختياري تفعّله من الزر بجانبه، ويُقرأ من العلبة إن كان مكتوبا. إن لم يكن مكتوبا يبقى فارغا ويُعدّ بلا تاريخ انتهاء.</p>
- <p style="margin:0">بياناتك محفوظة على هذا الجهاز فقط وليست في قاعدة بيانات. لا تمسح بيانات المتصفح قبل أن تصدّر.</p>`);
+$('#btnHelp').onclick=()=>openSheet(`<h2>ما هذا الموقع؟</h2><p>أداة منفصلة عن فارمورا تسرّع إدخال الأصناف أول مرة. تصوّر العلبة بالجوال فتُقرأ بياناتها، ثم تصدّر كل ما أدخلته في ملف واحد تستورده فارمورا.</p>
+ <h3 style="margin:14px 0 8px;font-size:15px">١. إدخال الأصناف هنا</h3>
+ <ol class="steps help"><li><span>اضغط «صنف جديد» وثبّت الكاميرا على اسم الدواء. يُقرأ الاسم تلقائيا بدون التقاط صورة، ووجّهها إلى الباركود فيُقرأ فورا.</span></li><li><span>تنتقل البيانات إلى الحقول. العلامة الخضراء تعني أن الحقل اكتمل، وكل شيء قابل للتعديل.</span></li><li><span>أضف الوحدات والأسعار، وإن كانت الكمية موجودة في الصيدلية فأدخلها كدفعة.</span></li><li><span>«حفظ والتالي» ينقلك مباشرة للصنف التالي.</span></li><li><span>اضغط «تصدير» واختر ما تريد: الكل، أو مجموعة، أو فئة، أو أصناف محددة. ثم احفظ الملف.</span></li></ol>
+ <h3 style="margin:14px 0 8px;font-size:15px">٢. استيراد الملف في فارمورا</h3>
+ <ol class="steps help"><li><span>افتح فارمورا وادخل إلى «المخزون والأدوية».</span></li><li><span>اضغط «أدوات المخزون».</span></li><li><span>اختر «استيراد من فارمورا المساعد» ثم اختر الملف الذي حفظته.</span></li><li><span>راجع المعاينة: عدد الأصناف الجديدة، والمكررة، والفئات التي ستُنشأ، والأصناف بلا سعر.</span></li><li><span>اضغط «استيراد». تُضاف الأصناف الجديدة مع دفعاتها دفعة واحدة.</span></li></ol>
+ <div class="note warn" style="margin-bottom:10px"><b>المكرر:</b> الصنف المكرر هو الذي له نفس الاسم أو نفس الباركود في فارمورا. يُتخطى ولا يُحدَّث، ولا تُضاف دفعاته، فلا تتكرر البيانات حتى لو استوردت الملف مرتين.</div>
+ <p>الأرشيف لا يدخل في الملف إلا إن اخترت تضمينه. المجموعات للترتيب في هذا الموقع فقط ولا تُصدَّر. الأصناف هي قائمة الأدوية العامة، والكمية الموجودة فعليا اختيارية.</p>
+ <p style="margin:0">بياناتك محفوظة على هذا الجهاز فقط. لا تمسح بيانات المتصفح قبل أن تصدّر الملف.</p>`);
 function openMenu(){
  openSheet(`<h2>الإعدادات</h2><div class="stack">
   <div><div class="lab" style="margin-bottom:6px">لغة اسم الدواء</div><div class="seg" id="sg"><button data-l="ar" class="${S.nameLang!=='en'?'on':''}">عربي</button><button data-l="en" class="${S.nameLang==='en'?'on':''}">English</button></div></div>
