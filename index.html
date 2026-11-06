@@ -312,7 +312,7 @@ function eanOK(s){if(!/^\d+$/.test(s)||![8,12,13].includes(s.length))return fals
 const DEF_CATS=['مسكنات','مضادات حيوية','جهاز تنفسي','جهاز هضمي','حساسية','سكري','ضغط وقلب','مكملات','مستلزمات','أدوية أطفال','عناية بالبشرة','عيون وأذن','عظام ومفاصل','أعصاب','غدد وهرمونات','مضادات فطريات وطفيليات','نسائية','خدمات'];
 let storeOK=true;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{storeOK=false}}};
-let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:'',useExp:false},LS.get('pma.settings',{}));
+let S=Object.assign({nameLang:null,cats:DEF_CATS.slice(),code:'',useExp:false,userKey:''},LS.get('pma.settings',{}));
 let items=LS.get('pma.items',[]);
 const saveS=()=>LS.set('pma.settings',S), saveI=()=>LS.set('pma.items',items);
 const PH={db:null,mem:new Map(),
@@ -534,7 +534,7 @@ async function camStart(){
  try{
   cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
-  restoreFocus();
+  restoreFocus();setTimeout(restoreFocus,600);
   if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
   liveStart();
  }catch(e){cam.stream=null;noLive(e)}
@@ -611,11 +611,12 @@ const toDataURL=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>o
 function frameBlob(max,q){const v=cam.video,k=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise(ok=>c.toBlob(ok,'image/jpeg',q))}
 
 /* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
-const L={focusAt:0,t:0,prev:null,steadyAt:0,moved:false,needMove:false,sharp:0,sharpMax:1,typedAt:-1e9,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
+const L={manual:false,manualAt:0,sweeping:false,blurAt:0,restAt:0,focusAt:0,t:0,prev:null,steadyAt:0,moved:false,needMove:false,sharp:0,sharpMax:1,typedAt:-1e9,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
 const GW=128,GH=96;
 const gcv=document.createElement('canvas');gcv.width=GW;gcv.height=GH;const gx=gcv.getContext('2d',{willReadFrequently:true});
 function grayOf(v){gx.drawImage(v,0,0,GW,GH);const d=gx.getImageData(0,0,GW,GH).data,g=new Uint8Array(GW*GH);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
 function sharpOf(g){let s=0,s2=0,n=0;for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-GW]-g[i+GW];s+=l;s2+=l*l;n++}const m=s/n;return s2/n-m*m}
+function sdOf(g){let s=0,s2=0;const n=g.length;for(let i=0;i<n;i+=3){s+=g[i];s2+=g[i]*g[i]}const k=Math.ceil(n/3),m=s/k;return Math.sqrt(Math.max(0,s2/k-m*m))}
 const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
 function liveStart(){clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;L.moved=false;liveTick()}
 async function liveTick(){
@@ -627,7 +628,10 @@ async function liveTick(){
  const now=performance.now(),g=grayOf(v),motion=gdiff(g,L.prev);L.prev=g;
  L.sharp=sharpOf(g);L.sharpMax=Math.max(L.sharp,L.sharpMax*0.985);
  if(motion>16)L.moved=true;
- if(motion<12){if(!L.steadyAt){L.steadyAt=now;if(now-L.focusAt>2500)restoreFocus()}}else L.steadyAt=0;
+ if(motion<12){if(!L.steadyAt)L.steadyAt=now}else L.steadyAt=0;
+ if(L.manual&&(motion>18||now-L.manualAt>6000))restoreFocus();
+ const blurry=L.sharp<L.sharpMax*0.5;
+ if(blurry&&L.steadyAt&&!L.sweeping&&!L.aiBusy&&!E.d.name.trim()){if(!L.blurAt)L.blurAt=now;if(now-L.blurAt>900&&now-L.focusAt>3000){L.blurAt=0;focusSweep()}}else if(!blurry)L.blurAt=0;
  const needBar=!E.touched.barcode&&(!E.d.barcode||E.barWarn);
  if(needBar&&!L.decBusy&&motion<14){
   L.decBusy=true;L.tick++;
@@ -636,11 +640,13 @@ async function liveTick(){
  }
  const hasName=!!E.d.name.trim(),needName=!hasName,needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
  const typing=now-L.typedAt<4000;
- const idle=!typing&&!L.aiBusy&&!L.paused&&now>L.cool;
+ if(L.paused&&L.restAt&&!L.aiBusy&&L.moved&&motion<12&&gdiff(g,L.last)>22&&(E.autoTotal||0)<9){L.paused=false;L.restAt=0;E.tries=0;E.autoTotal=(E.autoTotal||0)+1}   // clear scene change after a rest: try again
+ const idle=!typing&&!L.aiBusy&&!L.paused&&!L.sweeping&&now>L.cool;
  const steady=L.steadyAt&&now-L.steadyAt>350;
  const sharpOK=L.sharp>=L.sharpMax*0.6||now-L.lastAt>4000;
  const gap=now-L.lastAt;
- if(idle&&needName&&(!L.needMove||L.moved)&&sharpOK){
+ const flat=sdOf(g)<14;   // blank wall, lens covered: no point asking the AI
+ if(idle&&needName&&(!L.needMove||L.moved)&&sharpOK&&!flat){
   if((steady&&gap>(E.tries?2500:0))||(E.tries&&gap>3500&&motion<22))liveRead(g,'name');
  }else if(idle&&needExp&&steady&&L.moved&&gap>1500&&sharpOK)liveRead(g,'exp');
  guide();next();
@@ -654,28 +660,59 @@ async function liveRead(g,mode){
   if(!E)return;
   const n=applyReading(res,ex?'':(res&&eanOK(res.barcode)?res.barcode:''),false,ex);
   if(ex){L.cool=performance.now()+2200}
-  else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+1500;if(E.tries>=6){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
+  else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+1500;noName(res)}
  }catch(e){
   const c=e&&e.code;L.cool=performance.now()+3000;L.fails++;
-  if(['not_granted','need_code','rate_limited','offline','sampling_disabled','images_unavailable','session_expired','upstream_auth','upstream_model','missing_api_key'].includes(c)||E.tries>=6){L.paused=true;toast(aiError(e),'bad');setMsg('اضغط على الإطار لإعادة المحاولة')}else if(c==='upstream'||c==='server')toast(aiError(e),'bad')
+  if(AI_STOP.includes(c)){L.paused=true;aiStopped(e);setMsg('اضغط على الإطار لإعادة المحاولة')}else if(c==='slow_down'){L.cool=performance.now()+6000;toast(aiError(e),'bad')}else if(E.tries>=AUTO_TRIES){pauseNoRead()}else if(c==='upstream'||c==='server')toast(aiError(e),'bad')
  }finally{L.aiBusy=false;cam.el.classList.remove('busy')}
+}
+const AUTO_TRIES=3;
+/* economy: after 3 unsuccessful reads the AI rests until the picture changes clearly or the frame is tapped */
+function pauseNoRead(){L.paused=true;L.restAt=performance.now();setMsg('لم يُقرأ الاسم. قرّب العلبة وواجه الاسم ثم اضغط على الإطار')}
+function noName(res){
+ const why=res&&res.found===false?'لا يظهر دواء واضح في الإطار. وجّه الكاميرا إلى واجهة العلبة.':'الاسم غير واضح. قرّب العلبة قليلا وثبّتها وتأكد من الإضاءة.';
+ if(E.tries===1||E.tries>=AUTO_TRIES)toast(why,'bad');
+ if(E.tries>=AUTO_TRIES)pauseNoRead();else setMsg(why);
 }
 function forceRead(){
  if(cam.state!=='live'||!E||L.aiBusy||E.d.service)return;
  L.paused=false;L.fails=0;L.cool=0;E.tries=0;
  if(!E.d.name.trim())liveRead(L.prev,'name');
 }
+/* focus: continuous on the centre by default; a near-to-far sweep when the picture stays blurry; tap = focus on that point */
+const track=()=>cam.stream&&cam.stream.getVideoTracks()[0];
 function restoreFocus(){
- const tr=cam.stream&&cam.stream.getVideoTracks()[0];if(!tr)return;L.focusAt=performance.now();
- try{const c=tr.getCapabilities?tr.getCapabilities():{};if(c.focusMode&&c.focusMode.includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{})}catch{}
+ const tr=track();if(!tr)return;L.focusAt=performance.now();L.manual=false;
+ try{const c=tr.getCapabilities?tr.getCapabilities():{},adv={};
+  if(c.focusMode&&c.focusMode.includes('continuous')){adv.focusMode='continuous';adv.pointsOfInterest=[{x:.5,y:.5}]}
+  if(c.exposureMode&&c.exposureMode.includes('continuous'))adv.exposureMode='continuous';
+  if(c.whiteBalanceMode&&c.whiteBalanceMode.includes('continuous'))adv.whiteBalanceMode='continuous';
+  if(Object.keys(adv).length)tr.applyConstraints({advanced:[adv]}).catch(()=>tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}))}catch{}
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function focusSweep(){
+ const tr=track();if(!tr||L.sweeping)return;L.sweeping=true;L.focusAt=performance.now();
+ try{
+  const c=tr.getCapabilities?tr.getCapabilities():{},fd=c.focusDistance;
+  if(fd&&fd.max>fd.min&&c.focusMode&&c.focusMode.includes('manual')){
+   let best=-1,bv=fd.min;                         // near end first, then outwards
+   for(let i=0;i<8;i++){const t=i/7,v=fd.min+(fd.max-fd.min)*t*t;
+    await tr.applyConstraints({advanced:[{focusMode:'manual',focusDistance:v}]});await wait(170);
+    if(!cam.stream)return;const sh=sharpOf(grayOf(cam.video));if(sh>best){best=sh;bv=v}}
+   await tr.applyConstraints({advanced:[{focusMode:'manual',focusDistance:bv}]});L.manual=true;L.manualAt=performance.now();
+  }else if(c.focusMode&&c.focusMode.includes('single-shot')){
+   await tr.applyConstraints({advanced:[{focusMode:'single-shot',pointsOfInterest:[{x:.5,y:.5}]}]});await wait(900);restoreFocus();
+  }else restoreFocus();
+ }catch{restoreFocus()}
+ L.sweeping=false;
 }
 async function tapFocus(ev){
  if(cam.state!=='live')return;
  const r=cam.video.getBoundingClientRect(),px=ev.clientX-r.left,py=ev.clientY-r.top,x=Math.min(1,Math.max(0,px/r.width)),y=Math.min(1,Math.max(0,py/r.height));
  const ring=document.createElement('div');ring.className='ring';ring.style.left=px+'px';ring.style.top=py+'px';cam.el.append(ring);setTimeout(()=>ring.remove(),900);
- const tr=cam.stream&&cam.stream.getVideoTracks()[0];
+ const tr=track();
  if(tr&&tr.getCapabilities){try{const c=tr.getCapabilities(),adv={pointsOfInterest:[{x,y}]};if(c.focusMode&&c.focusMode.includes('single-shot'))adv.focusMode='single-shot';await tr.applyConstraints({advanced:[adv]})}catch{}}
- setTimeout(restoreFocus,1600);setTimeout(forceRead,700);
+ setTimeout(()=>{restoreFocus();L.blurAt=0},1400);setTimeout(forceRead,1000);
 }
 cam.video.addEventListener('click',tapFocus);
 function guide(){
@@ -719,15 +756,54 @@ async function callAI(blob,pre){
  const img=pre?blob:await shrink(blob,1024,.8),cats=S.cats.filter(c=>c!=='خدمات');
  if(samp)return clean(await samp.json(buildPrompt(S.nameLang||'ar',cats),{images:img,modelTier:'quick',cache:false}));
  let r;
- try{r=await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-access-code':S.code||''},body:JSON.stringify({image:await toDataURL(img),lang:S.nameLang||'ar',cats})})}catch{throw {code:'offline'}}
+ try{r=await fetch('/api/scan',{method:'POST',headers:Object.assign({'content-type':'application/json','x-access-code':S.code||''},S.userKey?{'x-user-key':S.userKey}:{}),body:JSON.stringify({image:await toDataURL(img),lang:S.nameLang||'ar',cats})})}catch{throw {code:'offline'}}
  const j=await r.json().catch(()=>({}));
  if(r.status===401)throw {code:'need_code'};
- if(!r.ok)throw {code:j.error||'server',detail:j.detail};
+ if(!r.ok)throw {code:j.error||'server',detail:j.detail,status:r.status};
  return clean(j);
 }
 function aiError(e){
  const c=e&&e.code;
- return ({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',upstream_auth:'مفتاح Gemini غير صالح أو بلا صلاحية. راجع GEMINI_API_KEY في Vercel.',upstream_model:'اسم نموذج Gemini غير متاح. راجع GEMINI_MODEL.',missing_api_key:'لم يُضبط GEMINI_API_KEY في Vercel.',upstream:'تعذّر الوصول إلى Gemini. أعد المحاولة.',rate_limited:'بلغت الحد المجاني من Gemini. انتظر قليلا ثم اضغط على الإطار.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
+ const m=({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',upstream_auth:'مفتاح الموقع غير صالح. يلزم تحديث GEMINI_API_KEY في Vercel.',missing_api_key:'لم يُضبط GEMINI_API_KEY في Vercel.',upstream:'تعذّر الوصول إلى Gemini. أعد المحاولة.',quota_exhausted:'انتهى الاستخدام المجاني لليوم.',user_key_invalid:'مفتاحك الخاص غير صالح. راجعه من الإعدادات.',user_key_limited:'بلغ مفتاحك الخاص حدّه المجاني. جرّب لاحقا.',slow_down:'طلبات كثيرة بسرعة. انتظر ثواني ثم اضغط على الإطار.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
+ return m+(e&&e.detail&&['upstream','upstream_auth','server'].includes(c)?' ('+String(e.detail).slice(0,90)+')':'');
+}
+const AI_STOP=['not_granted','need_code','offline','sampling_disabled','images_unavailable','session_expired','upstream_auth','missing_api_key','quota_exhausted','user_key_invalid','user_key_limited'];
+function aiStopped(e){
+ const c=e&&e.code;
+ if(c==='quota_exhausted'||c==='user_key_limited'||c==='user_key_invalid'){openKeySheet(c);return}
+ toast(aiError(e),'bad');
+}
+/* ---------- own Gemini key ---------- */
+function openKeySheet(why){
+ const head=why==='quota_exhausted'?'انتهى الاستخدام المجاني لليوم':why==='user_key_limited'?'بلغ مفتاحك حدّه المجاني':why==='user_key_invalid'?'مفتاحك غير صالح':'ربط مفتاح Gemini الخاص';
+ const lead=why==='quota_exhausted'?'الموقع مجاني ويُشارَك فيه حدّ واحد بين كل المستخدمين، وقد انتهى حدّ اليوم. يتجدد تلقائيا غدا. وإن أردت المتابعة الآن فاربط مفتاحك الخاص، وهو مجاني.':why==='user_key_limited'?'الحد المجاني لمفتاحك انتهى اليوم. يتجدد غدا.':why==='user_key_invalid'?'تحقق من نسخ المفتاح كاملا ثم جرّب مرة أخرى.':'اختياري. استخدمه إن انتهى الحد المجاني للموقع، أو إن أردت قراءة غير محدودة تقريبا.';
+ openSheet(`<h2>${head}</h2><p>${lead}</p>
+  <div class="note" style="margin-bottom:12px"><b>لماذا مفتاح خاص؟</b> قراءة اسم الدواء تتم بالذكاء الاصطناعي من Google (Gemini). لكل مفتاح حدّ مجاني يوميا. بمفتاحك يصبح الحد لك وحدك، فلا يتأثر بعدد من يستخدمون الموقع.<br><b>الفائدة:</b> استمرار القراءة بدون انتظار، بلا أي تكلفة في الاستخدام العادي.<br><b>الخصوصية:</b> يُحفظ المفتاح على هذا الجهاز فقط، ويُرسل مع كل قراءة إلى خادم الموقع ليمرّره إلى Google ولا يُخزَّن.</div>
+  <ol class="steps help">
+   <li><span>اضغط الزر أدناه لفتح صفحة Google AI Studio في تبويب جديد: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--pine);font-weight:600">aistudio.google.com/apikey</a></span></li>
+   <li><span>سجّل الدخول بأي حساب Google. إن لم يكن لك حساب فأنشئ واحدا مجانا.</span></li>
+   <li><span>اضغط <b>Create API key</b> (إنشاء مفتاح API).</span></li>
+   <li><span>اختر مشروعا موجودا، أو اكتب أي اسم لمشروع جديد (مثل pharmacy) واختره.</span></li>
+   <li><span>اضغط إنشاء، ثم انسخ المفتاح الذي يظهر (نص طويل).</span></li>
+   <li><span>ارجع هنا والصقه في الخانة وسيُختبر مباشرة.</span></li></ol>
+  <a class="btn pri" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:12px">فتح صفحة إنشاء المفتاح</a>
+  <input class="in ltr" id="ukIn" placeholder="الصق المفتاح هنا" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(S.userKey||'')}" style="margin-bottom:8px">
+  <div id="ukMsg" class="note" hidden style="margin-bottom:8px"></div>
+  <div class="stack"><button class="btn pri" id="ukSave">حفظ واختبار</button>${S.userKey?'<button class="btn bad" id="ukDel">إزالة مفتاحي</button>':''}<button class="btn" data-no>إغلاق</button></div>`,sh=>{
+  const msg=sh.querySelector('#ukMsg'),say=(t,bad)=>{msg.hidden=false;msg.textContent=t;msg.className='note'+(bad?' warn':'')};
+  sh.querySelector('[data-no]').onclick=closeSheet;
+  const del=sh.querySelector('#ukDel');if(del)del.onclick=()=>{S.userKey='';saveS();closeSheet();toast('أُزيل المفتاح')};
+  sh.querySelector('#ukSave').onclick=async()=>{
+   const k=sh.querySelector('#ukIn').value.trim();
+   if(!/^[A-Za-z0-9._\-]{20,200}$/.test(k)){say('المفتاح غير مكتمل. انسخه كاملا بدون مسافات.',true);return}
+   say('جارٍ الاختبار…');
+   try{
+    const r=await fetch('/api/scan?test=1',{headers:{'x-user-key':k}}),j=await r.json();
+    if(j.user&&j.user.ok){S.userKey=k;saveS();if(E){L.paused=false;L.fails=0;L.cool=0;E.tries=0}closeSheet();toast('تم ربط مفتاحك. تابع التصوير.')}
+    else{const d=j.user&&(j.user.studio||j.user.vertex||{}),st=d&&d.status;say(st===429?'المفتاح صحيح لكنه بلغ حدّه الآن. تم حفظه وسيعمل عند تجدد الحد.':'المفتاح مرفوض من Google'+(st?' (رمز '+st+')':'')+'. تأكد أنه من AI Studio وأنك نسخته كاملا.',st!==429);if(st===429){S.userKey=k;saveS()}}
+   }catch{say('تعذّر الاتصال بالموقع. تحقق من الإنترنت.',true)}
+  };
+ });
 }
 function applyReading(res,code,warn,onlyExp){
  const steps=[];
@@ -854,12 +930,14 @@ $('#btnHelp').onclick=()=>openSheet(`<h2>ما هذا الموقع؟</h2><p>أد�
 function openMenu(){
  openSheet(`<h2>الإعدادات</h2><div class="stack">
   <div><div class="lab" style="margin-bottom:6px">لغة اسم الدواء</div><div class="seg" id="sg"><button data-l="ar" class="${S.nameLang!=='en'?'on':''}">عربي</button><button data-l="en" class="${S.nameLang==='en'?'on':''}">English</button></div></div>
+  <button class="opt" id="mKey"><span>مفتاح Gemini الخاص${S.userKey?' (مفعّل)':''}</span>${ico('chev')}</button>
   <button class="opt" id="mCats"><span>استيراد الفئات من نسخة فارمورا</span>${ico('chev')}</button>
   <div><div class="lab" style="margin-bottom:6px">رمز الوصول (إن كان الموقع يطلبه)</div><input class="in" id="mCode" type="text" value="${esc(S.code)}" autocomplete="off"></div>
   ${items.some(i=>i.demo)?'<button class="opt" id="mDemo"><span>حذف الأصناف التجريبية</span>'+ico('trash')+'</button>':''}
   <button class="btn bad" id="mWipe">حذف كل البيانات من هذا الجهاز</button></div>`,s=>{
   s.querySelector('#sg').onclick=e=>{const b=e.target.closest('[data-l]');if(!b)return;S.nameLang=b.dataset.l;saveS();s.querySelectorAll('#sg button').forEach(x=>x.classList.toggle('on',x===b));E&&($('#nameLang').textContent=S.nameLang==='en'?'EN':'ع',$('#fName').classList.toggle('ltr',S.nameLang==='en'))};
   s.querySelector('#mCode').oninput=e=>{S.code=e.target.value.trim();saveS()};
+  s.querySelector('#mKey').onclick=()=>openKeySheet();
   s.querySelector('#mCats').onclick=()=>$('#catFile').click();
   s.querySelector('#mDemo')&&(s.querySelector('#mDemo').onclick=()=>{items=items.filter(i=>!i.demo);saveI();closeSheet();renderHome()});
   s.querySelector('#mWipe').onclick=()=>confirmSheet('حذف كل البيانات؟','تُحذف الأصناف والصور من هذا الجهاز. تأكد أنك صدّرت الملف.','حذف الكل',async()=>{for(const i of items)await PH.del(i.id);items=[];saveI();renderHome();toast('تم الحذف')},true);
