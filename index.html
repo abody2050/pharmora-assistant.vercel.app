@@ -374,6 +374,8 @@ $('#btnDemo').onclick=loadDemo;
 const ed=$('#editor');
 let E=null,busy=false,samp=null,dlcap=null;
 const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',exp:'',shelf:'',min:'',service:false,units:[{n:'',f:1,price:''}],batches:[],photo:false,createdAt:Date.now()});
+let warmT=0;
+function warm(){if(samp||Date.now()-warmT<240000)return;warmT=Date.now();fetch('/api/scan',{headers:{'x-access-code':S.code||''}}).catch(()=>{})}
 function openEditor(it){
  const isNew=!it;
  E={d:it?JSON.parse(JSON.stringify(it)):blank(),isNew,touched:{},conf:{},barWarn:false,photoURL:null,photoDel:false,snap:null,catNew:''};
@@ -385,7 +387,7 @@ function openEditor(it){
  $('#scroll').scrollTop=0;
  fillForm();E.snap=snapshot();
  if(it&&it.photo)PH.get(it.id).then(u=>{if(u&&E&&E.d.id===it.id){E.photoURL=u;paintPhoto()}});
- camStart();
+  camStart();warm();
 }
 const snapshot=()=>JSON.stringify([E.d,E.photoURL,E.photoDel]);
 function fillForm(){
@@ -406,6 +408,7 @@ function closeEditor(force){
 $('#edClose').innerHTML=ico('close');$('#edClose').onclick=()=>closeEditor(false);
 
 /* inputs */
+ed.addEventListener('input',()=>{L.typedAt=performance.now()});
 $('#fName').addEventListener('input',e=>{E.d.name=e.target.value;E.touched.name=true;refresh()});
 $('#fSci').addEventListener('input',e=>{E.d.sci=e.target.value;E.touched.sci=true;refresh()});
 $('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'').slice(0,14);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
@@ -608,19 +611,23 @@ const toDataURL=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>o
 function frameBlob(max,q){const v=cam.video,k=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise(ok=>c.toBlob(ok,'image/jpeg',q))}
 
 /* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
-const L={focusAt:0,t:0,prev:null,steadyAt:0,ref:null,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
-const gcv=document.createElement('canvas');gcv.width=64;gcv.height=48;const gx=gcv.getContext('2d',{willReadFrequently:true});
-function grayOf(v){gx.drawImage(v,0,0,64,48);const d=gx.getImageData(0,0,64,48).data,g=new Uint8Array(3072);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
+const L={focusAt:0,t:0,prev:null,steadyAt:0,moved:false,needMove:false,sharp:0,sharpMax:1,typedAt:-1e9,last:null,lastAt:0,aiBusy:false,decBusy:false,cool:0,fails:0,paused:false,blockBar:'',miss:0,tick:0};
+const GW=128,GH=96;
+const gcv=document.createElement('canvas');gcv.width=GW;gcv.height=GH;const gx=gcv.getContext('2d',{willReadFrequently:true});
+function grayOf(v){gx.drawImage(v,0,0,GW,GH);const d=gx.getImageData(0,0,GW,GH).data,g=new Uint8Array(GW*GH);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
+function sharpOf(g){let s=0,s2=0,n=0;for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-GW]-g[i+GW];s+=l;s2+=l*l;n++}const m=s/n;return s2/n-m*m}
 const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
-function liveStart(){clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;liveTick()}
+function liveStart(){clearTimeout(L.t);L.prev=null;L.steadyAt=0;L.paused=false;L.fails=0;L.cool=0;L.moved=false;liveTick()}
 async function liveTick(){
  clearTimeout(L.t);
  if(!E||cam.state!=='live'||ed.hidden)return;
- const next=()=>{L.t=setTimeout(liveTick,230)},v=cam.video;
+ const next=()=>{L.t=setTimeout(liveTick,200)},v=cam.video;
  if(v.paused){v.play().catch(()=>{});next();return}
  if(E.d.service||busy||!v.videoWidth){next();return}
  const now=performance.now(),g=grayOf(v),motion=gdiff(g,L.prev);L.prev=g;
- if(motion<6){if(!L.steadyAt){L.steadyAt=now;if(now-L.focusAt>2500)restoreFocus()}}else L.steadyAt=0;
+ L.sharp=sharpOf(g);L.sharpMax=Math.max(L.sharp,L.sharpMax*0.985);
+ if(motion>16)L.moved=true;
+ if(motion<12){if(!L.steadyAt){L.steadyAt=now;if(now-L.focusAt>2500)restoreFocus()}}else L.steadyAt=0;
  const needBar=!E.touched.barcode&&(!E.d.barcode||E.barWarn);
  if(needBar&&!L.decBusy&&motion<14){
   L.decBusy=true;L.tick++;
@@ -628,30 +635,34 @@ async function liveTick(){
    L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30)}).catch(()=>{L.decBusy=false});
  }
  const hasName=!!E.d.name.trim(),needName=!hasName,needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
- const typing=document.activeElement&&document.activeElement.tagName==='INPUT';
- const okSteady=!typing&&!L.aiBusy&&!L.paused&&now>L.cool&&L.steadyAt&&now-L.steadyAt>900&&(!L.ref||gdiff(g,L.ref)>14);
- if(okSteady&&needName&&(!L.last||gdiff(g,L.last)>10||now-L.lastAt>7000))liveRead(g,'name');
- else if(okSteady&&needExp&&L.last&&gdiff(g,L.last)>10)liveRead(g,'exp');
+ const typing=now-L.typedAt<4000;
+ const idle=!typing&&!L.aiBusy&&!L.paused&&now>L.cool;
+ const steady=L.steadyAt&&now-L.steadyAt>350;
+ const sharpOK=L.sharp>=L.sharpMax*0.6||now-L.lastAt>4000;
+ const gap=now-L.lastAt;
+ if(idle&&needName&&(!L.needMove||L.moved)&&sharpOK){
+  if((steady&&gap>(E.tries?2500:0))||(E.tries&&gap>3500&&motion<22))liveRead(g,'name');
+ }else if(idle&&needExp&&steady&&L.moved&&gap>1500&&sharpOK)liveRead(g,'exp');
  guide();next();
 }
 async function liveRead(g,mode){
  const ex=mode==='exp';
- L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.ref=null;cam.el.classList.add('busy');setMsg(ex?'جارٍ قراءة التاريخ…':'جارٍ قراءة الاسم…');
- if(ex)E.expTries=(E.expTries||0)+1;
+ L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.moved=false;L.needMove=false;cam.el.classList.add('busy');setMsg(ex?'جارٍ قراءة التاريخ…':'جارٍ قراءة الاسم…');
+ if(ex)E.expTries=(E.expTries||0)+1;else E.tries=(E.tries||0)+1;
  try{
-  const res=await callAI(await frameBlob(1280,.85));
+  const res=await callAI(await frameBlob(1024,.8),true);
   if(!E)return;
   const n=applyReading(res,ex?'':(res&&eanOK(res.barcode)?res.barcode:''),false,ex);
   if(ex){L.cool=performance.now()+2200}
-  else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+2200;if(L.fails>=4){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
+  else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+1500;if(E.tries>=6){L.paused=true;setMsg('اضغط على الإطار لإعادة القراءة')}}
  }catch(e){
   const c=e&&e.code;L.cool=performance.now()+3000;L.fails++;
-  if(['not_granted','need_code','rate_limited','offline','sampling_disabled','images_unavailable','session_expired'].includes(c)||L.fails>=4){L.paused=true;toast(aiError(e),'bad');setMsg('اضغط على الإطار لإعادة المحاولة')}
+  if(['not_granted','need_code','rate_limited','offline','sampling_disabled','images_unavailable','session_expired','upstream_auth','upstream_model','missing_api_key'].includes(c)||E.tries>=6){L.paused=true;toast(aiError(e),'bad');setMsg('اضغط على الإطار لإعادة المحاولة')}else if(c==='upstream'||c==='server')toast(aiError(e),'bad')
  }finally{L.aiBusy=false;cam.el.classList.remove('busy')}
 }
 function forceRead(){
  if(cam.state!=='live'||!E||L.aiBusy||E.d.service)return;
- L.paused=false;L.fails=0;L.cool=0;L.ref=null;L.last=null;
+ L.paused=false;L.fails=0;L.cool=0;E.tries=0;
  if(!E.d.name.trim())liveRead(L.prev,'name');
 }
 function restoreFocus(){
@@ -686,7 +697,7 @@ function buildPrompt(lang,cats){
 Reply with ONLY one JSON object, no other text:
 {"found":boolean,"name":string,"sci":string,"cat":string,"newCat":string,"barcode":string,"exp":string,"form":string,"packCount":number|null,"confidence":number}
 Rules:
-- name: brand name plus strength, written in ${L}, like ${ex}. If the brand is printed in another language, transliterate it to ${L}. Add the form only when it separates products (syrup, drops, cream, injection). No manufacturer, no slogans.
+- name: brand name plus strength, written in ${L}, like ${ex}. The brand is usually the largest text on the front; the strength sits next to it. Packaging designs vary a lot, so use the most prominent product name even when letters are stylized or partly cut off. If several products are visible, use the one nearest the center. If the brand is printed in another language, transliterate it to ${L}. Add the form only when it separates products (syrup, drops, cream, injection). No manufacturer, no slogans.
 - sci: active ingredient(s) without strengths, in ${L}; "" if not printed or unsure.
 - cat: exactly one string copied from this list, or "" if none fits: ${JSON.stringify(cats)}
 - newCat: only when cat is "": a short Arabic category name; otherwise "".
@@ -704,18 +715,19 @@ function clean(o){
  const pc=Number(o.packCount);
  return {found:o.found!==false,name:s(o.name),sci:s(o.sci),cat:c||'',newCat:c?'':s(o.newCat),barcode:toEn(s(o.barcode)).replace(/\D/g,''),exp:normExp(o.exp),form:s(o.form),packCount:pc>1&&pc<=1000?Math.round(pc):null,conf:Math.max(0,Math.min(1,Number(o.confidence)||0.5))};
 }
-async function callAI(blob){
- const img=await shrink(blob,1024,.8),cats=S.cats.filter(c=>c!=='خدمات');
+async function callAI(blob,pre){
+ const img=pre?blob:await shrink(blob,1024,.8),cats=S.cats.filter(c=>c!=='خدمات');
  if(samp)return clean(await samp.json(buildPrompt(S.nameLang||'ar',cats),{images:img,modelTier:'quick',cache:false}));
  let r;
  try{r=await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-access-code':S.code||''},body:JSON.stringify({image:await toDataURL(img),lang:S.nameLang||'ar',cats})})}catch{throw {code:'offline'}}
+ const j=await r.json().catch(()=>({}));
  if(r.status===401)throw {code:'need_code'};
- if(!r.ok)throw {code:'server'};
- return clean(await r.json());
+ if(!r.ok)throw {code:j.error||'server',detail:j.detail};
+ return clean(j);
 }
 function aiError(e){
  const c=e&&e.code;
- return ({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',rate_limited:'طلبات كثيرة. انتظر قليلا ثم أعد المحاولة.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
+ return ({not_granted:'لم تسمح باستخدام الذكاء الاصطناعي لهذه الصفحة.',upstream_auth:'مفتاح Gemini غير صالح أو بلا صلاحية. راجع GEMINI_API_KEY في Vercel.',upstream_model:'اسم نموذج Gemini غير متاح. راجع GEMINI_MODEL.',missing_api_key:'لم يُضبط GEMINI_API_KEY في Vercel.',upstream:'تعذّر الوصول إلى Gemini. أعد المحاولة.',rate_limited:'بلغت الحد المجاني من Gemini. انتظر قليلا ثم اضغط على الإطار.',image_rejected:'الصورة غير صالحة. التقط صورة أوضح.',need_code:'الموقع يطلب رمز الوصول. أدخله من قائمة ⋮.',offline:'الذكاء الاصطناعي غير متاح الآن. تحقق من الاتصال.',invalid_json:'لم تُفهم القراءة. أعد التصوير بإضاءة أوضح.',images_unavailable:'قراءة الصور غير متاحة هنا.'})[c]||'تعذّرت قراءة الصورة. أعد المحاولة.';
 }
 function applyReading(res,code,warn,onlyExp){
  const steps=[];
@@ -797,7 +809,7 @@ async function save(next){
  if(E.photoURL&&!E.photoDel)await PH.set(out.id,E.photoURL);else if(E.photoDel)await PH.del(out.id);
  const i=items.findIndex(x=>x.id===out.id);if(i>=0)items[i]=out;else items.unshift(out);
  saveI();toast(`تم حفظ «${out.name}»`);
- if(next&&E.isNew){L.ref=L.prev;L.blockBar=out.barcode||'';L.last=null;E=null;openEditor(null);}else closeEditor(true);
+ if(next&&E.isNew){L.needMove=true;L.moved=false;L.blockBar=out.barcode||'';L.last=null;L.lastAt=0;E=null;openEditor(null);}else closeEditor(true);
 }
 $('#btnSave').onclick=()=>save(false);$('#btnNext').onclick=()=>save(true);
 $('#btnDel').onclick=()=>confirmSheet('حذف الصنف؟',`سيُحذف «${E.d.name}» من هذا الجهاز.`,'حذف',()=>{items=items.filter(x=>x.id!==E.d.id);PH.del(E.d.id);saveI();toast('تم الحذف');closeEditor(true)},true);
