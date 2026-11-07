@@ -117,7 +117,7 @@ async function readOnce(model, key, mime, b64, prompt) {
   if (a < 0 || b < a) throw { status: 502, detail: 'invalid_json' };
   return JSON.parse(text.slice(a, b + 1));
 }
-const weak = o => !o || o.found === false || !String(o.name || '').trim() || (Number(o.confidence) || 0) < 0.55;
+const weak = o => !o || o.found === false || !String(o.name || '').trim();   // a name found is accepted at once, even with modest confidence
 const score = o => (o && String(o.name || '').trim() ? 1 : 0) + (Number(o && o.confidence) || 0);
 
 module.exports = async (req, res) => {
