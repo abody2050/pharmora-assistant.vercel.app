@@ -662,12 +662,18 @@ $('#camIcon').innerHTML=ico('camera');$('#camMore').innerHTML=ico('dots');
 const setCam=s=>{cam.state=s;cam.el.dataset.state=s};
 const setMsg=t=>{$('#camMsg').textContent=t||''};
 const FORMATS=['ean_13','ean_8','upc_a'];
+const isWideLens=l=>/ultra|wide|0\.5|عريض/i.test(l||'');
+async function camList(){try{return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput')}catch{return[]}}
 async function camStart(){
  if(!E||E.d.service)return;
  if(cam.stream){if(cam.video.srcObject!==cam.stream)cam.video.srcObject=cam.stream;cam.video.play().catch(()=>{});setCam('live');liveStart();return}
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){noLive();return}
  try{
-  cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160},frameRate:{ideal:30}},audio:false});
+  const base={width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30}};
+  try{cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,S.camId?{deviceId:{exact:S.camId}}:{facingMode:{ideal:'environment'}}),audio:false})}
+  catch(err){if(!S.camId)throw err;S.camId='';saveS();cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,{facingMode:{ideal:'environment'}}),audio:false})}
+  const tl=cam.stream.getVideoTracks()[0];
+  if(!S.camId&&isWideLens(tl&&tl.label)){const alt=(await camList()).find(d=>d.label&&!isWideLens(d.label)&&/back|rear|environment|خلف/i.test(d.label)&&d.deviceId!==(tl.getSettings().deviceId));if(alt){cam.stream.getTracks().forEach(t=>t.stop());S.camId=alt.deviceId;saveS();cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,{deviceId:{exact:alt.deviceId}}),audio:false})}}
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
   restoreFocus();setTimeout(restoreFocus,600);if(S.torch)setTorch(true);
   if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
@@ -766,6 +772,19 @@ const L={manual:false,manualAt:0,sweeping:false,blurAt:0,restAt:0,focusAt:0,t:0,
 const GW=128,GH=96;
 const gcv=document.createElement('canvas');gcv.width=GW;gcv.height=GH;const gx=gcv.getContext('2d',{willReadFrequently:true});
 function grayOf(v){gx.drawImage(v,0,0,GW,GH);const d=gx.getImageData(0,0,GW,GH).data,g=new Uint8Array(GW*GH);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
+/* focus score: edge energy of the centre half of the real frame (where a barcode is held). Thumbnails cannot show fine bars. */
+const FSc={c:null,x:null};
+function focusScore(){
+ const v=cam.video;if(!v||!v.videoWidth)return 0;
+ if(!FSc.c){FSc.c=document.createElement('canvas');FSc.c.width=480;FSc.c.height=360;FSc.x=FSc.c.getContext('2d',{willReadFrequently:true})}
+ const sw=v.videoWidth,sh=v.videoHeight,cw=sw*.5,ch=sh*.5;
+ FSc.x.drawImage(v,(sw-cw)/2,(sh-ch)/2,cw,ch,0,0,480,360);
+ const d=FSc.x.getImageData(0,0,480,360).data,W=480,H=360,g=new Float32Array(W*H);
+ for(let i=0,j=0;j<W*H;i+=4,j++)g[j]=d[i]*.3+d[i+1]*.59+d[i+2]*.11;
+ let s=0,n=0;
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x,l=Math.abs(4*g[i]-g[i-1]-g[i+1]-g[i-W]-g[i+W]);s+=l;n++}
+ return n?s/n:0;
+}
 function sharpOf(g){let s=0,s2=0,n=0;for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-GW]-g[i+GW];s+=l;s2+=l*l;n++}const m=s/n;return s2/n-m*m}
 function sdOf(g){let s=0,s2=0;const n=g.length;for(let i=0;i<n;i+=3){s+=g[i];s2+=g[i]*g[i]}const k=Math.ceil(n/3),m=s/k;return Math.sqrt(Math.max(0,s2/k-m*m))}
 const gdiff=(a,b)=>{if(!a||!b)return 255;let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length};
@@ -777,7 +796,7 @@ async function liveTick(){
  if(v.paused){v.play().catch(()=>{});next();return}
  if(E.d.service||busy||!v.videoWidth){next();return}
  const now=performance.now(),g=grayOf(v),motion=gdiff(g,L.prev);L.prev=g;
- L.sharp=sharpOf(g);L.sharpMax=Math.max(L.sharp,L.sharpMax*0.985);
+ L.sharp=focusScore();L.sharpMax=Math.max(L.sharp,L.sharpMax*0.985);
  if(motion>16)L.moved=true;
  if(motion<12){if(!L.steadyAt)L.steadyAt=now}else L.steadyAt=0;
  if(L.manual&&(motion>18||now-L.manualAt>6000))restoreFocus();
@@ -842,11 +861,12 @@ async function focusSweep(){
   if(fd&&fd.max>fd.min&&c.focusMode&&c.focusMode.includes('manual')){
    let best=-1,bv=fd.min;                         // near end first, then outwards
    for(let i=0;i<8;i++){const t=i/7,v=fd.min+(fd.max-fd.min)*t*t;
-    await tr.applyConstraints({advanced:[{focusMode:'manual',focusDistance:v}]});await wait(170);
-    if(!cam.stream)return;const sh=sharpOf(grayOf(cam.video));if(sh>best){best=sh;bv=v}}
+    await tr.applyConstraints({advanced:[{focusMode:'manual',focusDistance:v}]});await wait(260);
+    if(!cam.stream)return;const sh=focusScore();if(sh>best){best=sh;bv=v}}
    await tr.applyConstraints({advanced:[{focusMode:'manual',focusDistance:bv}]});L.manual=true;L.manualAt=performance.now();
   }else if(c.focusMode&&c.focusMode.includes('single-shot')){
-   await tr.applyConstraints({advanced:[{focusMode:'single-shot',pointsOfInterest:[{x:.5,y:.5}]}]});await wait(900);restoreFocus();
+   for(let k=0;k<2;k++){await tr.applyConstraints({advanced:[{focusMode:'single-shot',pointsOfInterest:[{x:.5,y:.5}]}]});await wait(1000)}
+   restoreFocus();
   }else restoreFocus();
  }catch{restoreFocus()}
  L.sweeping=false;
@@ -870,13 +890,26 @@ function openCamMenu(){
   <button class="opt" data-a="gal"><span>اختيار صورة من المعرض</span>${ico('image')}</button>
   <button class="opt" data-a="cap"><span>التقاط صورة بالكاميرا</span>${ico('camera')}</button>
   <button class="opt ${S.torch?'on':''}" data-a="torch"><span>الفلاش: ${S.torch?'مفعّل':'متوقف'}</span>${ico('bolt')}</button>
+  <button class="opt" data-a="lens"><span>تبديل العدسة</span>${ico('camera')}</button>
   <button class="opt" data-a="focus"><span>إعادة ضبط التركيز</span>${ico('focus')}</button></div>
   <p style="margin:10px 0 0;font-size:13px">يُحفظ آخر إعداد للفلاش ويُطبَّق عند فتح الكاميرا التالية.</p>`,sh=>{
   sh.addEventListener('click',e=>{const o=e.target.closest('[data-a]');if(!o)return;const a=o.dataset.a;
    if(a==='gal'){closeSheet();$('#galIn').click()}
    else if(a==='cap'){closeSheet();$('#capIn').click()}
    else if(a==='torch'){closeSheet();setTorch(!S.torch)}
-   else if(a==='focus'){closeSheet();restoreFocus();focusSweep();toast('أُعيد ضبط التركيز')}})});
+   else if(a==='focus'){closeSheet();restoreFocus();focusSweep();toast('أُعيد ضبط التركيز')}
+   else if(a==='lens'){closeSheet();switchLens()}})});
+}
+/* lens: phones have several back cameras; the ultra-wide one cannot focus up close. Cycle through them and remember the choice. */
+async function switchLens(){
+ const all=(await camList()).filter(d=>d.label?/back|rear|environment|خلف|camera/i.test(d.label)&&!/front|user|face|أمام/i.test(d.label):true);
+ if(all.length<2){toast('لا توجد عدسة أخرى متاحة','bad');return}
+ const cur=cam.stream&&cam.stream.getVideoTracks()[0]?.getSettings().deviceId;
+ const i=all.findIndex(d=>d.deviceId===(S.camId||cur));
+ const nx=all[(i+1)%all.length];
+ S.camId=nx.deviceId;saveS();
+ camStop();await camStart();
+ toast(isWideLens(nx.label)?'عدسة عريضة: قد لا تركّز عن قرب':'تم تبديل العدسة');
 }
 $('#camMore').onclick=e=>{e.stopPropagation();openCamMenu()};
 function guide(){
