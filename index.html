@@ -673,7 +673,11 @@ async function camStart(){
   try{cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,S.camId?{deviceId:{exact:S.camId}}:{facingMode:{ideal:'environment'}}),audio:false})}
   catch(err){if(!S.camId)throw err;S.camId='';saveS();cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,{facingMode:{ideal:'environment'}}),audio:false})}
   const tl=cam.stream.getVideoTracks()[0];
-  if(!S.camId&&isWideLens(tl&&tl.label)){const alt=(await camList()).find(d=>d.label&&!isWideLens(d.label)&&/back|rear|environment|خلف/i.test(d.label)&&d.deviceId!==(tl.getSettings().deviceId));if(alt){cam.stream.getTracks().forEach(t=>t.stop());S.camId=alt.deviceId;saveS();cam.stream=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,{deviceId:{exact:alt.deviceId}}),audio:false})}}
+  if(!S.camId){const backs=(await camList()).filter(d=>!/front|user|face|أمام/i.test(d.label||''));
+   if(backs.length>=2){const pick=backs[1];
+    if(pick.deviceId===(tl.getSettings().deviceId)){S.camId=pick.deviceId;saveS()}
+    else{try{const ns=await navigator.mediaDevices.getUserMedia({video:Object.assign({},base,{deviceId:{exact:pick.deviceId}}),audio:false});
+     cam.stream.getTracks().forEach(t=>t.stop());cam.stream=ns;S.camId=pick.deviceId;saveS()}catch{}}}}
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
   restoreFocus();setTimeout(restoreFocus,600);if(S.torch)setTorch(true);
   if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
@@ -811,7 +815,7 @@ async function liveTick(){
  const gap=now-L.lastAt;
  const flat=sdOf(g)<14;   // blank wall, lens covered: no point asking the AI
  if(idle&&needName&&(!L.needMove||L.moved)&&sharpOK&&!flat){
-  if((steady&&gap>(E.tries?2500:0))||(E.tries&&gap>3500&&motion<22))liveRead(g,'name');
+  if((steady&&gap>(E.tries?1200:0))||(E.tries&&gap>2500&&motion<22))liveRead(g,'name');
  }else if(idle&&needExp&&steady&&L.moved&&gap>1500&&sharpOK)liveRead(g,'exp');
  guide();next();
 }
@@ -820,7 +824,7 @@ async function liveRead(g,mode){
  L.aiBusy=true;L.last=g;L.lastAt=performance.now();L.moved=false;L.needMove=false;cam.el.classList.add('busy');setMsg(ex?'جارٍ قراءة التاريخ…':'جارٍ قراءة الاسم…');
  if(ex)E.expTries=(E.expTries||0)+1;else E.tries=(E.tries||0)+1;
  try{
-  const res=await callAI(await frameBlob(1024,.8),true);
+  const res=await callAI(await frameBlob(ex?1024:768,ex?.8:.74),true);
   if(!E)return;
   const n=applyReading(res,ex?'':(res&&eanOK(res.barcode)?res.barcode:''),false,ex);
   if(ex){L.cool=performance.now()+2200}
