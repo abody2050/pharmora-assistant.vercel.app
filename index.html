@@ -263,7 +263,7 @@ input.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
       <div class="chips" id="catSuggest"></div>
     </div>
     <div class="f"><label for="fBar"><span>الباركود</span><span id="barState"></span></label>
-      <input id="fBar" class="bar" type="text" inputmode="numeric" autocomplete="off" placeholder="يُقرأ بالكاميرا أو اكتبه"></div>
+      <input id="fBar" class="bar" type="text" inputmode="text" autocomplete="off" placeholder="يُقرأ بالكاميرا أو اكتبه"></div>
     <div class="f" id="expF"><label for="fExp"><span>تاريخ الانتهاء <small>(اختياري)</small></span><button class="pill" id="expTgl" type="button" aria-pressed="false"></button></label>
       <input id="fExp" class="in num" type="date" hidden>
       <small id="expHint" style="color:var(--muted);font-size:12.5px"></small></div>
@@ -479,8 +479,9 @@ const blank=()=>({id:uid(),name:'',sci:'',cat:'',barcode:'',exp:'',shelf:'',min:
 let warmT=0;
 function warm(){if(samp||Date.now()-warmT<240000)return;warmT=Date.now();fetch('/api/scan',{headers:{'x-access-code':S.code||''}}).catch(()=>{})}
 function openEditor(it){
+ audioUnlock();
  const isNew=!it;
- E={d:it?JSON.parse(JSON.stringify(it)):blank(),isNew,touched:{},conf:{},barWarn:false,photoURL:null,photoDel:false,snap:null,catNew:''};
+ E={d:it?JSON.parse(JSON.stringify(it)):blank(),isNew,touched:{},conf:{},arm:{},barWarn:false,photoURL:null,photoDel:false,snap:null,catNew:''};
  if(it){for(const k of ['name','sci','cat','barcode'])if(it[k])E.touched[k]=true}
  E.d.units.forEach(u=>{if(u.price==null)u.price=''});
  $('#home').hidden=true;$('#dock').hidden=true;ed.hidden=false;
@@ -513,7 +514,7 @@ $('#edClose').innerHTML=ico('close');$('#edClose').onclick=()=>closeEditor(false
 ed.addEventListener('input',()=>{L.typedAt=performance.now()});
 $('#fName').addEventListener('input',e=>{E.d.name=e.target.value;E.touched.name=true;refresh()});
 $('#fSci').addEventListener('input',e=>{E.d.sci=e.target.value;E.touched.sci=true;refresh()});
-$('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/\D/g,'').slice(0,14);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
+$('#fBar').addEventListener('input',e=>{const v=toEn(e.target.value).replace(/[^A-Za-z0-9\-\.\/\+ ]/g,'').slice(0,40);e.target.value=v;E.d.barcode=v;E.touched.barcode=true;E.barWarn=false;refresh()});
 $('#fShelf').addEventListener('input',e=>{E.d.shelf=e.target.value});
 function paintGrp(){const n=grpName(E.d.grp);$('#fGrp').innerHTML=(n?`<span>${esc(n)}</span>`:'<span class="ph">بدون مجموعة</span>')+ico('chev')}
 $('#fGrp').onclick=()=>pickGroup(E.d.grp||'',g=>{E.d.grp=g;paintGrp()});
@@ -645,11 +646,12 @@ function refresh(){
  if(dup){w.hidden=false;w.innerHTML=`<span>${ico('alert')}</span><span style="flex:1">${dup.kind==='name'?'يوجد صنف بنفس الاسم تماما:':'هذا الباركود مسجّل لصنف آخر:'} «${esc(dup.item.name)}». عدّل الاسم أو افتح الصنف الموجود.</span><button class="btn sm" id="dupOpen" type="button">فتح الموجود</button>`;
   $('#dupOpen').onclick=()=>{const t=dup.item;E.snap=snapshot();closeEditor(true);openEditor(t)}}else w.hidden=true;
  const priced=d.units.length&&d.units.every(u=>u.n&&+u.price>0);
- const bar=d.barcode,barOk=bar&&eanOK(bar)&&!E.barWarn;
+ const bar=d.barcode,barOk=bar&&okCode(bar)&&!E.barWarn;
  const chk=[['الاسم',!!d.name.trim()],['الفئة',!!d.cat],...(d.service?[]:[['الباركود',barOk?true:bar?'warn':false]]),['الأسعار',priced]];
  if(d.sci)chk.push(['المادة',true]);
  if(S.useExp&&!d.service)chk.push(['الانتهاء',!!d.exp]);
- $('#checks').innerHTML=chk.map(([n,s])=>`<span class="ck ${s===true?'ok':s==='warn'?'warn':''}">${s===true?ico('check'):s==='warn'?ico('alert'):'<i class="dot"></i>'}${n}</span>`).join('');
+ const armOf=n=>n==='الاسم'?'name':n==='الباركود'?'barcode':'';
+ $('#checks').innerHTML=chk.map(([n,s])=>`<button class="ck ${s===true?'ok':s==='warn'?'warn':''}" type="button" ${armOf(n)?`data-arm="${armOf(n)}"`:''}>${s===true?ico('check'):s==='warn'?ico('alert'):'<i class="dot"></i>'}${n}</button>`).join('');
  $('#barState').innerHTML=bar?(barOk?`<span style="color:var(--pine)">${ico('check')}</span>`:`<span style="color:var(--warn);font-size:12.5px">راجع الرقم</span>`):'';
  const bad=!!dup||!d.name.trim();
  $('#btnSave').disabled=bad;$('#btnNext').disabled=bad;
@@ -661,7 +663,21 @@ const cam={el:$('#cam'),video:$('#video'),stream:null,det:null,state:'idle'};
 $('#camIcon').innerHTML=ico('camera');$('#camMore').innerHTML=ico('dots');
 const setCam=s=>{cam.state=s;cam.el.dataset.state=s};
 const setMsg=t=>{$('#camMsg').textContent=t||''};
-const FORMATS=['ean_13','ean_8','upc_a'];
+const FORMATS=['code_128','ean_13','ean_8','upc_a','upc_e','code_39','code_93','codabar','itf'];
+/* a barcode value: digits, letters and common symbols (Code 128 labels often read like YE-01-029-11) */
+function okCode(x){return typeof x==='string'&&/^[A-Za-z0-9][A-Za-z0-9\-\.\/\+ ]{1,39}$/.test(x.trim())}
+let DET=undefined;
+async function makeDet(){
+ if(!('BarcodeDetector' in window))return null;
+ if(DET!==undefined)return DET;
+ let f=FORMATS;try{const sup=await BarcodeDetector.getSupportedFormats();f=FORMATS.filter(x=>sup.includes(x))}catch{}
+ try{DET=new BarcodeDetector({formats:f.length?f:undefined})}catch{try{DET=new BarcodeDetector()}catch{DET=null}}
+ return DET;
+}
+/* short beep, like a shop scanner */
+let AC=null;
+function audioUnlock(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch{}}
+function beep(){try{audioUnlock();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.value=2800;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+0.12)}catch{}}
 const isWideLens=l=>/ultra|wide|0\.5|عريض/i.test(l||'');
 async function camList(){try{return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput')}catch{return[]}}
 async function camStart(){
@@ -680,7 +696,7 @@ async function camStart(){
      cam.stream.getTracks().forEach(t=>t.stop());cam.stream=ns;S.camId=pick.deviceId;saveS()}catch{}}}}
   cam.video.srcObject=cam.stream;await cam.video.play();setCam('live');
   restoreFocus();setTimeout(restoreFocus,600);if(S.torch)setTorch(true);
-  if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:FORMATS})}catch{cam.det=null}}
+  cam.det=await makeDet();
   liveStart();
  }catch(e){cam.stream=null;noLive(e)}
 }
@@ -736,14 +752,15 @@ const scanC=document.createElement('canvas'),scanX=scanC.getContext('2d',{willRe
 function grayFrom(src,w,h){scanC.width=w;scanC.height=h;scanX.drawImage(src,0,0,w,h);const d=scanX.getImageData(0,0,w,h).data,g=new Uint8ClampedArray(w*h);for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;return g}
 async function detectCode(v,tick){
  const vw=v.videoWidth,vh=v.videoHeight,w=Math.min(960,vw),h=Math.round(vh*w/vw);
- if(cam.det){try{const r=await cam.det.detect(v);const c=r.map(x=>x.rawValue).find(eanOK);if(c)return c}catch{}}
+ if(cam.det){try{const r=await cam.det.detect(v);const c=r.map(x=>x.rawValue).find(okCode);if(c)return c}catch{}}
  if(!cam.det||tick%3===0)return scanGray(grayFrom(v,w,h),w,h);
  return '';
 }
 async function barcodeFromBlob(blob){
  try{const bmp=await createImageBitmap(blob);let c='';
-  if('BarcodeDetector' in window){try{const r=await new BarcodeDetector({formats:FORMATS}).detect(bmp);c=r.map(x=>x.rawValue).find(eanOK)||''}catch{}}
-  if(!c){const w=Math.min(1280,bmp.width),h=Math.round(bmp.height*w/bmp.width);c=scanGray(grayFrom(bmp,w,h),w,h)}
+  const det=await makeDet();
+  if(det){try{const r=await det.detect(bmp);c=r.map(x=>x.rawValue).find(okCode)||''}catch{}}
+  if(!c&&!det){const w=Math.min(1280,bmp.width),h=Math.round(bmp.height*w/bmp.width);c=scanGray(grayFrom(bmp,w,h),w,h)}
   bmp.close&&bmp.close();return c}catch{return ''}
 }
 async function shrink(blob,max,q){
@@ -760,15 +777,22 @@ let barI=0;
 function barStart(){clearInterval(barI);barI=setInterval(barTick,120)}
 function barStop(){clearInterval(barI);barI=0}
 async function barTick(){
- if(!E||cam.state!=='live'||E.d.service||E.touched.barcode||L.decBusy)return;
- if(E.d.barcode&&!E.barWarn)return;
+ if(!E||cam.state!=='live'||L.decBusy)return;
+ const armed=!!(E.arm&&E.arm.barcode);
+ if(!armed&&(E.d.service||E.touched.barcode||(E.d.barcode&&!E.barWarn)))return;
  const v=cam.video;if(v.paused||!v.videoWidth)return;
  L.decBusy=true;L.tick++;
  try{
-  const code=await detectCode(v,L.tick);
+  let code=await detectCode(v,L.tick);
   if(!E)return;
-  if(!code){if(++L.miss>8)L.blockBar='';return}
-  L.miss=0;if(code===L.blockBar)return;L.blockBar='';setVal('barcode',code,{conf:3});navigator.vibrate&&navigator.vibrate(30);
+  if(code&&!cam.det){if(code!==L.bcand){L.bcand=code;return}}   // JS-only decoder: accept after two identical reads
+  if(!code){L.bcand='';if(++L.miss>8)L.blockBar='';return}
+  L.miss=0;
+  if(code===L.blockBar&&!armed)return;
+  L.blockBar='';L.bcand='';
+  setVal('barcode',code,{conf:3});
+  if(E.arm)E.arm.barcode=false;
+  beep();navigator.vibrate&&navigator.vibrate(30);
  }catch{}finally{L.decBusy=false}
 }
 /* live engine: watches the camera continuously. Barcode is decoded on every pass. The name is read by AI once the picture holds still. */
@@ -806,7 +830,7 @@ async function liveTick(){
  if(L.manual&&(motion>18||now-L.manualAt>6000))restoreFocus();
  const blurry=L.sharp<L.sharpMax*0.5;
  if(blurry&&L.steadyAt&&!L.sweeping&&!L.aiBusy){if(!L.blurAt)L.blurAt=now;if(now-L.blurAt>700&&now-L.focusAt>3500){L.blurAt=0;focusSweep()}}else if(!blurry)L.blurAt=0;
- const hasName=!!E.d.name.trim(),needName=!hasName,needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
+ const hasName=!!E.d.name.trim(),needName=!hasName||!!(E.arm&&E.arm.name),needExp=S.useExp&&hasName&&!E.d.exp&&(E.expTries||0)<3;
  const typing=now-L.typedAt<4000;
  if(L.paused&&L.restAt&&!L.aiBusy&&L.moved&&motion<12&&gdiff(g,L.last)>22&&(E.autoTotal||0)<9){L.paused=false;L.restAt=0;E.tries=0;E.autoTotal=(E.autoTotal||0)+1}   // clear scene change after a rest: try again
  const idle=!typing&&!L.aiBusy&&!L.paused&&!L.sweeping&&now>L.cool;
@@ -826,7 +850,8 @@ async function liveRead(g,mode){
  try{
   const res=await callAI(await frameBlob(ex?1024:768,ex?.8:.74),true);
   if(!E)return;
-  const n=applyReading(res,ex?'':(res&&eanOK(res.barcode)?res.barcode:''),false,ex);
+  const n=applyReading(res,ex?'':(res&&okCode(res.barcode)?res.barcode:''),false,ex);
+  if(!ex&&E&&E.arm&&E.arm.name&&res&&String(res.name||'').trim())E.arm.name=false;
   if(ex){L.cool=performance.now()+2200}
   else if(n){L.fails=0}else{L.fails++;L.cool=performance.now()+1500;noName(res)}
  }catch(e){
@@ -919,7 +944,7 @@ $('#camMore').onclick=e=>{e.stopPropagation();openCamMenu()};
 function guide(){
  if(!E||cam.state!=='live'||E.d.service)return;
  const hn=!!E.d.name.trim(),hb=!!E.d.barcode&&!E.barWarn,wantExp=S.useExp&&!E.d.exp&&(E.expTries||0)<3;
- $('#camSteps').innerHTML=[['الاسم',hn],['الباركود',hb],...(S.useExp?[['الانتهاء',!!E.d.exp]]:[])].map(([n,o])=>`<span class="cs ${o?'ok':''}">${o?ico('check'):'<i></i>'}${n}</span>`).join('');
+ $('#camSteps').innerHTML=[['الاسم',hn,'name'],['الباركود',hb,'barcode'],...(S.useExp?[['الانتهاء',!!E.d.exp,'']]:[])].map(([n,o,k])=>`<button class="cs ${o?'ok':''}" type="button" ${k?`data-arm="${k}"`:''}>${o?ico('check'):'<i></i>'}${n}</button>`).join('');
  if(L.aiBusy||(L.paused&&!hn))return;
  setMsg(!hn?'ثبّت اسم الدواء داخل الإطار':!hb?'الآن وجّه الباركود':wantExp?'وجّه تاريخ الانتهاء إن كان مكتوبا':'اكتمل. راجع الحقول واحفظ');
  if(hn&&hb&&!wantExp&&!E.doneShown){E.doneShown=true;cam.el.classList.add('done');navigator.vibrate&&navigator.vibrate([20,40,20]);setTimeout(()=>cam.el.classList.remove('done'),900)}
@@ -1027,7 +1052,7 @@ async function analyze(blob){
  const [bc,ai]=await Promise.allSettled([barcodeFromBlob(blob),callAI(blob)]);
  if(ai.status==='fulfilled')res=ai.value;else err=ai.reason;
  let code=bc.status==='fulfilled'?bc.value:'',warn=false;
- if(!code&&res&&res.barcode){code=res.barcode;warn=!eanOK(code)}
+ if(!code&&res&&res.barcode){code=res.barcode;warn=!okCode(code)}
  cam.el.classList.remove('busy');setMsg('');busy=false;
  if(!E)return;
  const n=applyReading(res,code,warn);
@@ -1045,6 +1070,15 @@ function suggestUnits(r){
  renderUnits();renderBatches();
 }
 const FIELD={name:'#fName',sci:'#fSci',cat:'#fCat',barcode:'#fBar',exp:'#fExp'};
+/* any field can be read again at any time: tap its marker and point the camera at it */
+function armRead(k){
+ if(!E)return;E.arm=E.arm||{};E.arm[k]=true;E.touched[k]=false;E.conf[k]=0;
+ if(k==='barcode'){E.barWarn=false;L.blockBar=''}
+ L.paused=false;L.fails=0;L.cool=0;E.tries=0;L.bcand='';
+ setMsg(k==='name'?'وجّه الكاميرا نحو اسم الدواء':'وجّه الكاميرا نحو الباركود');
+ refresh();
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-arm]');if(a&&E&&a.dataset.arm)armRead(a.dataset.arm)});
 function setVal(k,v,o={}){
  if(!E)return;const d=E.d,cur=d[k],conf=o.conf??0.5;
  if(cur&&(E.touched[k]&&k!=='barcode'||conf<=(E.conf[k]||0)))return;
